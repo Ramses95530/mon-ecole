@@ -1,0 +1,848 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>École — GS · CP · CM1 · CM2</title>
+<link href="https://fonts.googleapis.com/css2?family=Nunito:wght@400;600;700;800&family=Baloo+2:wght@700;800&display=swap" rel="stylesheet">
+<style>
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+:root{
+  --bg:#f4f1ee;--surface:#fff;--surface2:#faf8f5;--border:#e6e0d8;
+  --text:#2a2320;--text2:#7a6f6a;--text3:#a89f9a;
+  --gs:#e91e8c;--gs-l:#fde8f4;--gs-d:#b5166c;
+  --cp:#ff9800;--cp-l:#fff3e0;--cp-d:#c77800;
+  --cm1:#e07b39;--cm1-l:#fdf0e6;--cm1-d:#b85e20;
+  --cm2:#3a8fcd;--cm2-l:#e6f3fc;--cm2-d:#1e6fa8;
+  --ma:#9b59b6;--ma-l:#f5eefa;--ma-d:#7d3c98;
+  --fr:#e74c3c;--fr-l:#fdecea;--fr-d:#c0392b;
+  --ev:#27ae60;--ev-l:#eafaf1;--ev-d:#1e8449;
+  --hi:#c0392b;--hi-l:#fdecea;--hi-d:#922b21;
+  --ge:#27ae60;--ge-l:#eafaf1;--ge-d:#1e8449;
+  --frcm:#9b59b6;--frcm-l:#f5eefa;--frcm-d:#7d3c98;
+  --green:#2eaa6e;--green-l:#e6f7f0;
+  --red:#e04848;--red-l:#fdeaea;
+  --radius:14px;--radius-sm:8px;
+  --shadow:0 2px 12px rgba(0,0,0,.07);--shadow-lg:0 8px 32px rgba(0,0,0,.12)
+}
+body{font-family:'Nunito',sans-serif;background:var(--bg);color:var(--text);min-height:100vh}
+header{background:var(--surface);border-bottom:2px solid var(--border);padding:.8rem 1.25rem;display:flex;align-items:center;justify-content:space-between;position:sticky;top:0;z-index:100;box-shadow:var(--shadow)}
+.logo{font-family:'Baloo 2',cursive;font-size:1.3rem;font-weight:800}
+.logo .gs{color:var(--gs)}.logo .cp{color:var(--cp)}.logo .cm1{color:var(--cm1)}.logo .cm2{color:var(--cm2)}
+.logo .sep{color:var(--text3);font-size:.8rem;margin:0 3px}
+.score-bar{display:flex;gap:7px}
+.score-pill{display:flex;align-items:center;gap:4px;padding:4px 11px;border-radius:50px;font-size:13px;font-weight:700;border:1.5px solid var(--border);background:var(--surface2)}
+.score-pill.ok{border-color:var(--green);color:var(--green);background:var(--green-l)}
+.score-pill.ko{border-color:var(--red);color:var(--red);background:var(--red-l)}
+.main{max-width:680px;margin:0 auto;padding:1.5rem 1.25rem}
+/* HOME */
+.home-title{font-family:'Baloo 2',cursive;font-size:1.6rem;font-weight:800;text-align:center;margin-bottom:.3rem}
+.home-sub{color:var(--text2);font-size:.95rem;text-align:center;margin-bottom:1.5rem}
+.level-grid{display:grid;grid-template-columns:1fr 1fr;gap:1rem;margin-bottom:1.5rem}
+.level-card{border:2px solid var(--border);border-radius:var(--radius);padding:1.25rem 1rem;cursor:pointer;transition:all .2s;background:var(--surface);text-align:center}
+.level-card:hover{transform:translateY(-2px);box-shadow:var(--shadow-lg)}
+.level-card.gs{border-color:var(--gs);background:var(--gs-l)}
+.level-card.cp{border-color:var(--cp);background:var(--cp-l)}
+.level-card.cm1{border-color:var(--cm1);background:var(--cm1-l)}
+.level-card.cm2{border-color:var(--cm2);background:var(--cm2-l)}
+.level-lbl{font-family:'Baloo 2',cursive;font-size:1.8rem;font-weight:800}
+.level-card.gs .level-lbl{color:var(--gs)}.level-card.cp .level-lbl{color:var(--cp)}
+.level-card.cm1 .level-lbl{color:var(--cm1)}.level-card.cm2 .level-lbl{color:var(--cm2)}
+.level-desc{font-size:11px;color:var(--text2);margin-top:3px}
+/* SUBJECT */
+.subject-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:.9rem}
+.subject-card{border:2px solid var(--border);border-radius:var(--radius);padding:1.25rem 1rem;cursor:pointer;transition:all .2s;background:var(--surface);text-align:center}
+.subject-card:hover{transform:translateY(-2px);box-shadow:var(--shadow-lg)}
+.s-icon{font-size:2rem;margin-bottom:5px}
+.s-lbl{font-family:'Baloo 2',cursive;font-size:1.05rem;font-weight:800}
+.subject-card.ma{border-color:var(--ma)}.subject-card.ma .s-lbl{color:var(--ma)}
+.subject-card.fr{border-color:var(--fr)}.subject-card.fr .s-lbl{color:var(--fr)}
+.subject-card.ev{border-color:var(--ev)}.subject-card.ev .s-lbl{color:var(--ev)}
+.subject-card.hi{border-color:var(--hi)}.subject-card.hi .s-lbl{color:var(--hi)}
+.subject-card.ge{border-color:var(--ge)}.subject-card.ge .s-lbl{color:var(--ge)}
+.subject-card.frcm{border-color:var(--frcm)}.subject-card.frcm .s-lbl{color:var(--frcm)}
+.s-desc{font-size:11px;color:var(--text2);margin-top:2px}
+/* PILLS */
+.cat-row{display:flex;gap:7px;flex-wrap:wrap;margin-bottom:1.25rem}
+.cat-pill{padding:6px 13px;border-radius:50px;font-size:12px;font-weight:700;border:1.5px solid var(--border);background:var(--surface);color:var(--text2);cursor:pointer;transition:all .18s}
+/* QUESTION */
+.q-card{background:var(--surface);border:1.5px solid var(--border);border-radius:var(--radius);padding:1.5rem;box-shadow:var(--shadow);animation:slideIn .22s ease}
+@keyframes slideIn{from{opacity:0;transform:translateY(6px)}to{opacity:1;transform:translateY(0)}}
+.q-meta{display:flex;align-items:center;justify-content:space-between;margin-bottom:1rem}
+.q-num{font-size:11px;font-weight:700;color:var(--text3);text-transform:uppercase;letter-spacing:.5px}
+.progress-wrap{flex:1;height:5px;background:var(--bg);border-radius:5px;margin:0 12px;overflow:hidden}
+.progress-fill{height:100%;border-radius:5px;transition:width .4s}
+.q-badge{font-size:11px;font-weight:700;color:var(--text3)}
+.q-text{font-size:1.2rem;font-weight:700;color:var(--text);margin-bottom:1.25rem;line-height:1.5}
+.q-emoji{font-size:3rem;text-align:center;margin-bottom:.75rem}
+.choices{display:grid;grid-template-columns:1fr 1fr;gap:9px;margin-bottom:1rem}
+.choice-btn{padding:13px 10px;font-family:'Nunito',sans-serif;font-size:.9rem;font-weight:700;border:1.5px solid var(--border);border-radius:var(--radius-sm);background:var(--surface2);color:var(--text);cursor:pointer;transition:all .18s;text-align:center;line-height:1.3}
+.choice-btn:hover:not(:disabled){border-color:var(--text3);background:var(--surface);transform:translateY(-1px);box-shadow:var(--shadow)}
+.choice-btn:disabled{cursor:default}
+.choice-btn.correct{background:var(--green-l);border-color:var(--green);color:var(--green)}
+.choice-btn.wrong{background:var(--red-l);border-color:var(--red);color:var(--red);text-decoration:line-through}
+.choice-btn.reveal{background:var(--green-l);border-color:var(--green);color:var(--green);opacity:.65}
+/* GS big buttons */
+.choices.big .choice-btn{padding:18px 10px;font-size:1.1rem}
+.feedback{border-radius:var(--radius-sm);padding:10px 14px;font-size:14px;font-weight:700;margin-bottom:1rem;display:none}
+.feedback.ok{display:block;background:var(--green-l);color:var(--green);border:1px solid var(--green)}
+.feedback.ko{display:block;background:var(--red-l);color:var(--red);border:1px solid var(--red)}
+.nav-row{display:flex;gap:10px;align-items:center}
+.btn{padding:9px 20px;font-family:'Nunito',sans-serif;font-size:14px;font-weight:700;border-radius:50px;border:1.5px solid var(--border);background:var(--surface);color:var(--text2);cursor:pointer;transition:all .18s}
+.btn:hover{border-color:var(--text3);color:var(--text)}
+.btn.p-ma{background:var(--ma);border-color:var(--ma);color:#fff}.btn.p-ma:hover{background:var(--ma-d)}
+.btn.p-fr,.btn.p-hi{background:var(--fr);border-color:var(--fr);color:#fff}.btn.p-fr:hover,.btn.p-hi:hover{background:var(--fr-d)}
+.btn.p-ev,.btn.p-ge{background:var(--ev);border-color:var(--ev);color:#fff}.btn.p-ev:hover,.btn.p-ge:hover{background:var(--ev-d)}
+.btn.p-frcm{background:var(--frcm);border-color:var(--frcm);color:#fff}.btn.p-frcm:hover{background:var(--frcm-d)}
+/* RESULT */
+.result-card{background:var(--surface);border:1.5px solid var(--border);border-radius:var(--radius);padding:2.5rem 2rem;text-align:center;box-shadow:var(--shadow-lg);animation:slideIn .3s ease}
+.result-emoji{font-size:3.5rem;margin-bottom:.75rem}
+.result-score{font-family:'Baloo 2',cursive;font-size:2.8rem;font-weight:800}
+.result-pct{font-size:14px;color:var(--text3);margin:4px 0 8px;font-weight:700}
+.result-msg{font-size:1rem;font-weight:700;color:var(--text2);margin-bottom:1.75rem}
+.result-btns{display:flex;gap:10px;justify-content:center;flex-wrap:wrap}
+/* nav breadcrumb */
+.breadcrumb{display:flex;align-items:center;gap:6px;flex-wrap:wrap;margin-bottom:1.25rem}
+.bc-item{font-size:13px;font-weight:700;color:var(--text3);cursor:pointer}
+.bc-item:hover{color:var(--text)}
+.bc-sep{font-size:13px;color:var(--text3)}
+.bc-current{font-size:13px;font-weight:700;color:var(--text)}
+@media(max-width:500px){.choices,.level-grid{grid-template-columns:1fr}.subject-grid{grid-template-columns:1fr 1fr}.main{padding:1rem}.q-text{font-size:1.05rem}.logo{font-size:1rem}}
+</style>
+</head>
+<body>
+<header>
+  <div class="logo">
+    <span class="gs">GS</span><span class="sep">·</span>
+    <span class="cp">CP</span><span class="sep">·</span>
+    <span class="cm1">CM1</span><span class="sep">·</span>
+    <span class="cm2">CM2</span>
+    <span style="font-family:'Nunito',sans-serif;font-size:.8rem;font-weight:600;color:var(--text3);margin-left:6px">Mon École</span>
+  </div>
+  <div class="score-bar">
+    <div class="score-pill ok">✓ <span id="score-ok">0</span></div>
+    <div class="score-pill ko">✗ <span id="score-ko">0</span></div>
+  </div>
+</header>
+<div class="main" id="main"></div>
+<script>
+// ============================================================
+//  DATA
+// ============================================================
+const DATA = {
+// ---- GS ----
+gs:{
+  ma:{
+    compter:[
+      {q:"Combien vois-tu de étoiles ?",e:"⭐⭐⭐",ch:["1","2","3","4"],a:2},
+      {q:"Combien vois-tu de ballons ?",e:"🎈🎈",ch:["1","2","3","4"],a:1},
+      {q:"Combien vois-tu de pommes ?",e:"🍎🍎🍎🍎",ch:["2","3","4","5"],a:2},
+      {q:"Combien vois-tu de chats ?",e:"🐱🐱🐱🐱🐱",ch:["3","4","5","6"],a:2},
+      {q:"Combien vois-tu de cœurs ?",e:"❤️❤️❤️",ch:["1","2","3","4"],a:2},
+      {q:"Combien vois-tu de fleurs ?",e:"🌸🌸",ch:["1","2","3","4"],a:1},
+      {q:"Combien vois-tu de canards ?",e:"🦆🦆🦆🦆",ch:["3","4","5","6"],a:1},
+      {q:"Combien vois-tu de soleils ?",e:"☀️",ch:["1","2","3","4"],a:0},
+    ],
+    formes:[
+      {q:"Comment s'appelle cette forme ?",e:"🔴",ch:["Carré","Cercle","Triangle","Rectangle"],a:1},
+      {q:"Comment s'appelle cette forme ?",e:"🟦",ch:["Cercle","Triangle","Carré","Losange"],a:2},
+      {q:"Quelle forme a 3 côtés ?",e:"📐",ch:["Carré","Cercle","Triangle","Rectangle"],a:2},
+      {q:"Quelle forme a 4 côtés égaux ?",e:"",ch:["Rectangle","Cercle","Triangle","Carré"],a:3},
+      {q:"Le soleil ressemble à quelle forme ?",e:"☀️",ch:["Carré","Triangle","Cercle","Rectangle"],a:2},
+      {q:"Une pizza ressemble à quelle forme ?",e:"🍕",ch:["Carré","Triangle","Cercle","Rectangle"],a:1},
+      {q:"Un livre ressemble à quelle forme ?",e:"📚",ch:["Cercle","Triangle","Carré","Rectangle"],a:3},
+      {q:"Quelle forme a 0 côté ?",e:"",ch:["Triangle","Carré","Cercle","Rectangle"],a:2},
+    ],
+    additions:[
+      {q:"Combien font 1 + 1 ?",e:"🍎 + 🍎",ch:["1","2","3","4"],a:1},
+      {q:"Combien font 2 + 1 ?",e:"🐱🐱 + 🐱",ch:["2","3","4","5"],a:1},
+      {q:"Combien font 1 + 2 ?",e:"⭐ + ⭐⭐",ch:["2","3","4","5"],a:1},
+      {q:"Combien font 2 + 2 ?",e:"🎈🎈 + 🎈🎈",ch:["3","4","5","6"],a:1},
+      {q:"Combien font 3 + 1 ?",e:"🌸🌸🌸 + 🌸",ch:["3","4","5","6"],a:1},
+      {q:"Combien font 1 + 3 ?",e:"❤️ + ❤️❤️❤️",ch:["3","4","5","6"],a:1},
+      {q:"Combien font 2 + 3 ?",e:"🦆🦆 + 🦆🦆🦆",ch:["4","5","6","7"],a:1},
+      {q:"Combien font 3 + 2 ?",e:"🍌🍌🍌 + 🍌🍌",ch:["4","5","6","7"],a:1},
+    ],
+  },
+  fr:{
+    lettres:[
+      {q:"Quelle lettre est-ce ?",e:"A",ch:["B","A","C","D"],a:1},
+      {q:"Quelle lettre est-ce ?",e:"O",ch:["Q","C","O","D"],a:2},
+      {q:"Quelle lettre vient après A ?",e:"A → ?",ch:["C","Z","B","D"],a:2},
+      {q:"Quelle lettre commence le mot CHAT ?",e:"🐱",ch:["S","B","C","T"],a:2},
+      {q:"Quelle lettre commence le mot MAISON ?",e:"🏠",ch:["M","A","I","S"],a:0},
+      {q:"Quelle lettre commence le mot SOLEIL ?",e:"☀️",ch:["E","S","L","O"],a:1},
+      {q:"Quelle lettre finit le mot CHAT ?",e:"🐱 CHA_",ch:["S","R","T","N"],a:2},
+      {q:"Quelle lettre commence le mot POMME ?",e:"🍎",ch:["B","P","M","O"],a:1},
+    ],
+    syllabes:[
+      {q:"Combien de syllabes dans CHAT ?",e:"🐱 CHAT",ch:["1","2","3","4"],a:0},
+      {q:"Combien de syllabes dans MAISON ?",e:"🏠 MAI-SON",ch:["1","2","3","4"],a:1},
+      {q:"Combien de syllabes dans ÉLÉPHANT ?",e:"🐘 É-LÉ-PHANT",ch:["1","2","3","4"],a:2},
+      {q:"Combien de syllabes dans SOLEIL ?",e:"☀️ SO-LEIL",ch:["1","2","3","4"],a:1},
+      {q:"Combien de syllabes dans PAPILLON ?",e:"🦋 PA-PIL-LON",ch:["2","3","4","5"],a:1},
+      {q:"Combien de syllabes dans LAPIN ?",e:"🐰 LA-PIN",ch:["1","2","3","4"],a:1},
+      {q:"Combien de syllabes dans POMME ?",e:"🍎 POM-ME",ch:["1","2","3","4"],a:1},
+      {q:"Combien de syllabes dans CROCODILE ?",e:"🐊 CRO-CO-DI-LE",ch:["2","3","4","5"],a:2},
+    ],
+    mots:[
+      {q:"Quel mot correspond à l'image ?",e:"🐱",ch:["Chien","Chat","Lapin","Oiseau"],a:1},
+      {q:"Quel mot correspond à l'image ?",e:"🍎",ch:["Poire","Banane","Pomme","Fraise"],a:2},
+      {q:"Quel mot correspond à l'image ?",e:"🌙",ch:["Soleil","Étoile","Lune","Nuage"],a:2},
+      {q:"Quel mot correspond à l'image ?",e:"🚗",ch:["Vélo","Voiture","Train","Avion"],a:1},
+      {q:"Quel mot correspond à l'image ?",e:"🌳",ch:["Fleur","Herbe","Arbre","Feuille"],a:2},
+      {q:"Quel mot correspond à l'image ?",e:"🐟",ch:["Requin","Baleine","Poisson","Crabe"],a:2},
+      {q:"Quel mot correspond à l'image ?",e:"✏️",ch:["Stylo","Crayon","Règle","Gomme"],a:1},
+      {q:"Quel mot correspond à l'image ?",e:"🎂",ch:["Pizza","Tarte","Gâteau","Pain"],a:2},
+    ],
+  },
+  ev:{
+    animaux:[
+      {q:"Quel animal est-ce ?",e:"🐘",ch:["Lion","Zèbre","Éléphant","Girafe"],a:2},
+      {q:"Quel animal est-ce ?",e:"🦁",ch:["Lion","Tigre","Léopard","Guépard"],a:0},
+      {q:"Quel animal vole ?",e:"",ch:["Chien","Chat","Oiseau","Lapin"],a:2},
+      {q:"Quel animal habite dans l'eau ?",e:"🌊",ch:["Chat","Cheval","Poisson","Lapin"],a:2},
+      {q:"Quel animal fait « Meuh » ?",e:"🐄",ch:["Cheval","Vache","Cochon","Mouton"],a:1},
+      {q:"Quel animal est-ce ?",e:"🦋",ch:["Abeille","Mouche","Papillon","Libellule"],a:2},
+      {q:"Quel animal fait « Ouaf » ?",e:"🐕",ch:["Chat","Chien","Lapin","Oiseau"],a:1},
+      {q:"Quel animal est-ce ?",e:"🐸",ch:["Crapaud","Tortue","Grenouille","Lézard"],a:2},
+    ],
+    couleurs:[
+      {q:"De quelle couleur est le soleil ?",e:"☀️",ch:["Bleu","Rouge","Jaune","Vert"],a:2},
+      {q:"De quelle couleur est le ciel ?",e:"🌤️",ch:["Rouge","Bleu","Vert","Jaune"],a:1},
+      {q:"De quelle couleur est l'herbe ?",e:"🌿",ch:["Bleu","Rouge","Jaune","Vert"],a:3},
+      {q:"De quelle couleur est une tomate ?",e:"🍅",ch:["Vert","Bleu","Rouge","Jaune"],a:2},
+      {q:"De quelle couleur est une banane ?",e:"🍌",ch:["Rouge","Jaune","Bleu","Vert"],a:1},
+      {q:"De quelle couleur est la neige ?",e:"❄️",ch:["Noir","Gris","Blanc","Rose"],a:2},
+      {q:"De quelle couleur est un éléphant ?",e:"🐘",ch:["Blanc","Gris","Noir","Brun"],a:1},
+      {q:"De quelle couleur est une carotte ?",e:"🥕",ch:["Rouge","Jaune","Orange","Vert"],a:2},
+    ],
+    nature:[
+      {q:"Quand voit-on des fleurs pousser ?",e:"🌸",ch:["En hiver","En automne","Au printemps","En été"],a:2},
+      {q:"Quand les feuilles tombent des arbres ?",e:"🍂",ch:["Au printemps","En été","En automne","En hiver"],a:2},
+      {q:"D'où vient la pluie ?",e:"🌧️",ch:["Des rivières","Des nuages","Des montagnes","De la mer"],a:1},
+      {q:"Que mange un lapin ?",e:"🐰",ch:["De la viande","Des carottes et légumes","Du poisson","Des insectes"],a:1},
+      {q:"Où vivent les poissons ?",e:"🐟",ch:["Dans les arbres","Dans la terre","Dans l'eau","Dans le sable"],a:2},
+      {q:"Quel astre éclaire la nuit ?",e:"🌙",ch:["Le soleil","La lune","Les étoiles","Le nuage"],a:1},
+      {q:"Que donnent les poules ?",e:"🐔",ch:["Du lait","Du miel","Des œufs","De la laine"],a:2},
+      {q:"D'où vient le miel ?",e:"🍯",ch:["Des vaches","Des abeilles","Des fleurs","Des arbres"],a:1},
+    ],
+  },
+},
+// ---- CP ----
+cp:{
+  ma:{
+    nombres:[
+      {q:"Quel nombre vient après 9 ?",ch:["8","10","11","7"],a:1},
+      {q:"Combien font 3 + 4 ?",ch:["6","7","8","9"],a:1},
+      {q:"Combien font 5 + 3 ?",ch:["7","8","9","6"],a:1},
+      {q:"Combien font 10 – 3 ?",ch:["6","7","8","9"],a:1},
+      {q:"Quel est le plus grand : 7 ou 9 ?",ch:["7","9","Égaux","Impossible à dire"],a:1},
+      {q:"Combien font 4 + 4 ?",ch:["6","7","8","9"],a:2},
+      {q:"Combien font 6 + 2 ?",ch:["7","8","9","10"],a:1},
+      {q:"Combien font 9 – 4 ?",ch:["4","5","6","7"],a:1},
+    ],
+    formes:[
+      {q:"Un carré a combien de côtés ?",ch:["3","4","5","6"],a:1},
+      {q:"Un triangle a combien de sommets ?",ch:["2","3","4","5"],a:1},
+      {q:"Quelle forme a 4 côtés mais pas forcément égaux ?",ch:["Triangle","Cercle","Rectangle","Losange"],a:2},
+      {q:"Comment s'appelle un rond parfait ?",ch:["Ovale","Carré","Cercle","Ellipse"],a:2},
+      {q:"Combien de côtés a un rectangle ?",ch:["2","3","4","6"],a:2},
+      {q:"Quelle forme ressemble à une boîte de conserve vue de dessus ?",ch:["Carré","Triangle","Cercle","Rectangle"],a:2},
+      {q:"Un carré est aussi un :",ch:["Triangle","Cercle","Rectangle","Pentagone"],a:2},
+      {q:"Quelle forme a 3 côtés et 3 angles ?",ch:["Carré","Triangle","Cercle","Rectangle"],a:1},
+    ],
+    additions:[
+      {q:"Combien font 5 + 5 ?",ch:["8","9","10","11"],a:2},
+      {q:"Combien font 7 + 3 ?",ch:["9","10","11","8"],a:1},
+      {q:"Combien font 6 + 6 ?",ch:["10","11","12","13"],a:2},
+      {q:"Combien font 8 + 4 ?",ch:["10","11","12","13"],a:2},
+      {q:"Combien font 15 – 5 ?",ch:["8","9","10","11"],a:2},
+      {q:"Combien font 12 – 4 ?",ch:["6","7","8","9"],a:2},
+      {q:"Combien font 9 + 6 ?",ch:["13","14","15","16"],a:2},
+      {q:"Combien font 20 – 8 ?",ch:["10","11","12","13"],a:2},
+    ],
+  },
+  fr:{
+    phonologie:[
+      {q:"Quel son entends-tu au début de CHAT ?",ch:["[s]","[ch]","[k]","[t]"],a:1},
+      {q:"Quelle lettre fait le son [o] dans MOTO ?",ch:["M","T","O","A"],a:2},
+      {q:"Combien de sons dans CHAT ?",ch:["1","2","3","4"],a:2},
+      {q:"Quel mot contient le son [a] ?",ch:["Lune","Arbre","Nuit","Bleu"],a:1},
+      {q:"Quel mot rime avec CHAT ?",ch:["Chien","Rat","Oiseau","Poule"],a:1},
+      {q:"Quel mot rime avec MAISON ?",ch:["Jardin","Forêt","Saison","Rivière"],a:2},
+      {q:"Quelle lettre fait le son [f] dans PHOQUE ?",ch:["P","H","PH","Q"],a:2},
+      {q:"Quel mot contient le son [ou] ?",ch:["Lune","Loup","Lapin","Lion"],a:1},
+    ],
+    lecture:[
+      {q:"Quel mot est écrit ici ? → CHAT",ch:["Chien","Chat","Rat","Char"],a:1},
+      {q:"Quel mot est écrit ici ? → MAISON",ch:["Melon","Maison","Mason","Raison"],a:1},
+      {q:"Quel mot est écrit ici ? → SOLEIL",ch:["Solide","Soleil","Soreil","Solel"],a:1},
+      {q:"Quel mot est écrit ici ? → LAPIN",ch:["Labin","Latin","Lapin","Lupin"],a:2},
+      {q:"Quel mot est écrit ici ? → ÉCOLE",ch:["Écale","École","Écoule","École"],a:1},
+      {q:"Quel mot est écrit ici ? → FLEUR",ch:["Fleurs","Pleur","Fleur","Flueur"],a:2},
+      {q:"Quel mot est écrit ici ? → JARDIN",ch:["Jardin","Garden","Gardin","Jardon"],a:0},
+      {q:"Quel mot est écrit ici ? → MOUTON",ch:["Moton","Mouton","Bouton","Muton"],a:1},
+    ],
+    grammaire:[
+      {q:"Dans « Le chien court », quel est le verbe ?",ch:["Le","chien","court","Le chien"],a:2},
+      {q:"Dans « La petite fille chante », quel est le nom ?",ch:["La","petite","fille","chante"],a:2},
+      {q:"Quel mot est un animal ?",ch:["Maison","Cheval","Rouge","Vite"],a:1},
+      {q:"Quel mot désigne une chose ?",ch:["Manger","Beau","Table","Vite"],a:2},
+      {q:"Dans « Le chat noir dort », quel est l'adjectif ?",ch:["Le","chat","noir","dort"],a:2},
+      {q:"Quel mot est une action ?",ch:["Maison","Bleu","Courir","Jardin"],a:2},
+      {q:"Dans « Elle mange une pomme », qui mange ?",ch:["Une pomme","mange","Elle","pomme"],a:2},
+      {q:"Quel groupe de mots est une phrase ?",ch:["Chien le mange","Le chien mange","mange chien le","Chien mange le"],a:1},
+    ],
+  },
+  ev:{
+    animaux:[
+      {q:"Quel animal est un mammifère ?",ch:["Poisson","Serpent","Chien","Araignée"],a:2},
+      {q:"Quel animal pond des œufs ?",ch:["Chien","Cheval","Poule","Vache"],a:2},
+      {q:"Quel animal vit dans la forêt ?",ch:["Baleine","Renard","Requin","Dauphin"],a:1},
+      {q:"Quel animal donne du lait ?",ch:["Poule","Lapin","Vache","Canard"],a:2},
+      {q:"Quel animal est le plus grand ?",ch:["Chat","Chien","Éléphant","Lapin"],a:2},
+      {q:"Quel animal est un insecte ?",ch:["Araignée","Fourmi","Escargot","Ver de terre"],a:1},
+      {q:"Quel animal fait son nid dans les arbres ?",ch:["Taupe","Lapin","Oiseau","Poisson"],a:2},
+      {q:"Quel animal hiberne en hiver ?",ch:["Chien","Ours","Cheval","Vache"],a:1},
+    ],
+    saisons:[
+      {q:"Quelle saison vient après l'hiver ?",ch:["Été","Automne","Printemps","Hiver encore"],a:2},
+      {q:"En quelle saison va-t-on à la plage ?",ch:["Hiver","Printemps","Automne","Été"],a:3},
+      {q:"Quelle saison est la plus froide ?",ch:["Été","Automne","Hiver","Printemps"],a:2},
+      {q:"En quelle saison les feuilles tombent ?",ch:["Printemps","Été","Automne","Hiver"],a:2},
+      {q:"En quelle saison fleurissent les fleurs ?",ch:["Hiver","Printemps","Automne","Été"],a:1},
+      {q:"Combien y a-t-il de saisons dans une année ?",ch:["2","3","4","5"],a:2},
+      {q:"Quelle saison vient après l'été ?",ch:["Printemps","Automne","Hiver","Été encore"],a:1},
+      {q:"En quelle saison fait-il le plus chaud ?",ch:["Hiver","Printemps","Automne","Été"],a:3},
+    ],
+    corps:[
+      {q:"Combien a-t-on de jambes ?",ch:["1","2","3","4"],a:1},
+      {q:"Avec quoi respire-t-on ?",ch:["Le cœur","L'estomac","Les poumons","Le foie"],a:2},
+      {q:"Avec quoi voit-on ?",ch:["Les oreilles","Le nez","Les yeux","La bouche"],a:2},
+      {q:"Avec quoi entend-on ?",ch:["Les yeux","Les oreilles","Le nez","La bouche"],a:1},
+      {q:"Combien a-t-on de doigts en tout ?",ch:["8","9","10","12"],a:2},
+      {q:"Avec quoi goûte-t-on les aliments ?",ch:["Le nez","Les yeux","Les oreilles","La langue"],a:3},
+      {q:"Avec quoi sent-on les odeurs ?",ch:["La bouche","Le nez","Les oreilles","Les yeux"],a:1},
+      {q:"Quel organe pompe le sang ?",ch:["Le poumon","L'estomac","Le cœur","Le foie"],a:2},
+    ],
+  },
+},
+// ---- CM1 ----
+cm1:{
+  ma:{
+    calcul:[
+      {q:"Combien font 23 × 4 ?",ch:["82","92","84","72"],a:1},
+      {q:"Combien font 150 – 67 ?",ch:["93","83","73","87"],a:1},
+      {q:"Combien font 6 × 7 ?",ch:["36","48","42","54"],a:2},
+      {q:"Combien font 348 + 215 ?",ch:["563","553","573","543"],a:0},
+      {q:"Combien font 64 ÷ 8 ?",ch:["6","7","9","8"],a:3},
+      {q:"Quel est le triple de 24 ?",ch:["62","72","68","78"],a:1},
+      {q:"Combien font 9 × 9 ?",ch:["72","81","89","79"],a:1},
+      {q:"Combien font 500 – 135 ?",ch:["365","395","375","355"],a:0},
+    ],
+    fractions:[
+      {q:"Quelle fraction représente une moitié ?",ch:["1/4","1/3","1/2","2/3"],a:2},
+      {q:"Combien font 1/4 + 1/4 ?",ch:["1/8","1/4","1/2","2/4 (=1/2)"],a:3},
+      {q:"3/4, c'est combien de quarts ?",ch:["3","4","7","1"],a:0},
+      {q:"Combien font 1/2 + 1/2 ?",ch:["1/4","2/4","1","1/2"],a:2},
+      {q:"Quelle fraction est inférieure à 1 ?",ch:["4/4","5/4","3/4","6/4"],a:2},
+      {q:"Quelle fraction correspond à 0,25 ?",ch:["1/2","1/4","1/5","2/5"],a:1},
+      {q:"Combien font 1/2 – 1/4 ?",ch:["1/4","1/2","3/4","2/4"],a:0},
+      {q:"Quelle fraction est plus grande : 1/2 ou 1/3 ?",ch:["1/3","Égales","1/2","Impossible"],a:2},
+    ],
+    geometrie:[
+      {q:"Quel est le périmètre d'un carré de côté 5 cm ?",ch:["20 cm","25 cm","15 cm","10 cm"],a:0},
+      {q:"Quel est le périmètre d'un rectangle 8 cm × 3 cm ?",ch:["22 cm","24 cm","11 cm","16 cm"],a:0},
+      {q:"Un triangle a combien de côtés ?",ch:["4","2","3","5"],a:2},
+      {q:"Un angle droit mesure combien de degrés ?",ch:["45°","60°","90°","180°"],a:2},
+      {q:"Combien de faces a un cube ?",ch:["4","8","5","6"],a:3},
+      {q:"Combien de côtés a un hexagone ?",ch:["5","6","7","8"],a:1},
+      {q:"Combien de sommets a un carré ?",ch:["2","3","6","4"],a:3},
+      {q:"Quelle forme a 0 côté ?",ch:["Triangle","Cercle","Carré","Losange"],a:1},
+    ],
+    mesures:[
+      {q:"Combien de cm dans 1 m ?",ch:["10","1000","100","50"],a:2},
+      {q:"Combien de g dans 1 kg ?",ch:["100","10000","1000","500"],a:2},
+      {q:"1 heure = combien de minutes ?",ch:["30","100","90","60"],a:3},
+      {q:"Combien de mm dans 1 cm ?",ch:["100","10","1000","5"],a:1},
+      {q:"2 kg = combien de grammes ?",ch:["200 g","2000 g","20000 g","1000 g"],a:1},
+      {q:"Combien de secondes dans 1 minute ?",ch:["100","30","60","120"],a:2},
+      {q:"1,5 m = combien de cm ?",ch:["15","105","150","1500"],a:2},
+      {q:"Combien de cL dans 1 litre ?",ch:["10","1000","100","50"],a:2},
+    ],
+    problemes:[
+      {q:"Tom a 35 billes et en donne 12. Combien lui en reste-t-il ?",ch:["23","47","13","33"],a:0},
+      {q:"Un paquet coûte 2 €. Julie en achète 4. Combien dépense-t-elle ?",ch:["6 €","10 €","8 €","12 €"],a:2},
+      {q:"28 élèves en groupes de 4. Combien de groupes ?",ch:["6","8","7","9"],a:2},
+      {q:"Léa a 45 autocollants, elle en reçoit 23. Combien en a-t-elle ?",ch:["68","22","78","58"],a:0},
+      {q:"96 pages, 48 lues. Combien en reste-t-il ?",ch:["48","144","38","58"],a:0},
+      {q:"5 rangées de 6 chaises. Combien y a-t-il de chaises ?",ch:["11","25","30","36"],a:2},
+      {q:"Paul marche 3 km/jour pendant 6 jours. Quelle distance ?",ch:["9 km","18 km","12 km","15 km"],a:1},
+      {q:"Un sac de 40 bonbons. On en mange 8. Combien reste-t-il ?",ch:["48","22","38","32"],a:3},
+    ],
+  },
+  frcm:{
+    grammaire:[
+      {q:"Quel est le nom dans « Le chat dort » ?",ch:["Le","chat","dort","Le chat"],a:1},
+      {q:"Quel mot est un verbe ?",ch:["maison","beau","courir","lentement"],a:2},
+      {q:"Quel mot est un adjectif qualificatif ?",ch:["chanter","rapidement","grand","table"],a:2},
+      {q:"Dans « Elle mange une pomme », quel est le sujet ?",ch:["mange","une pomme","Elle","pomme"],a:2},
+      {q:"Quel mot est un article ?",ch:["beau","le","vite","manger"],a:1},
+      {q:"Quel mot est un adverbe ?",ch:["maison","bleu","rapidement","chat"],a:2},
+      {q:"Quel est le COD dans « Paul mange une pomme » ?",ch:["Paul","mange","une pomme","Paul mange"],a:2},
+      {q:"Dans « Le petit chien court vite », le groupe nominal sujet est :",ch:["court vite","Le petit chien","vite","chien court"],a:1},
+    ],
+    conjugaison:[
+      {q:"Conjugue « chanter » au présent avec « je » :",ch:["je chantais","je chanterai","je chante","j'ai chanté"],a:2},
+      {q:"Conjugue « être » au présent avec « nous » :",ch:["nous étions","nous sommes","nous serons","nous avons été"],a:1},
+      {q:"Quel est le temps de « il jouait » ?",ch:["Présent","Futur","Imparfait","Passé composé"],a:2},
+      {q:"Conjugue « avoir » au présent avec « tu » :",ch:["tu avais","tu auras","tu as","tu avais eu"],a:2},
+      {q:"Conjugue « aller » au futur avec « je » :",ch:["je vais","j'allais","j'irai","je suis allé"],a:2},
+      {q:"Quel est le temps de « nous avons mangé » ?",ch:["Présent","Imparfait","Futur","Passé composé"],a:3},
+      {q:"Conjugue « finir » au présent avec « il » :",ch:["il finissait","il finit","il finira","il a fini"],a:1},
+      {q:"Conjugue « faire » au présent avec « vous » :",ch:["vous faisiez","vous ferez","vous faites","vous avez fait"],a:2},
+    ],
+    orthographe:[
+      {q:"Le son [s] entre deux voyelles s'écrit :",ch:["s","ss","c","ç"],a:1},
+      {q:"Le féminin de « beau » est :",ch:["beaux","belle","belles","beau"],a:1},
+      {q:"Le pluriel de « cheval » est :",ch:["chevals","chevales","chevaux","cheveaux"],a:2},
+      {q:"Le féminin de « acteur » est :",ch:["acteure","actrice","acteuse","acteuresse"],a:1},
+      {q:"Le pluriel de « œil » est :",ch:["œils","yeux","œiles","ails"],a:1},
+      {q:"Le féminin de « chanteur » est :",ch:["chanteuse","chanteresse","chanteure","chantrice"],a:0},
+      {q:"Quel mot est mal orthographié ?",ch:["maison","ballon","chato","jardin"],a:2},
+      {q:"Quel mot s'écrit avec un accent circonflexe ?",ch:["ame","forêt","baton","ile"],a:1},
+    ],
+    vocabulaire:[
+      {q:"Synonyme de « content » ?",ch:["triste","heureux","fâché","inquiet"],a:1},
+      {q:"Antonyme de « grand » ?",ch:["haut","gros","petit","long"],a:2},
+      {q:"Le préfixe « in- » dans « invisible » signifie :",ch:["très","pas","encore","déjà"],a:1},
+      {q:"Quel mot appartient à la famille de « mer » ?",ch:["mère","merci","marin","marché"],a:2},
+      {q:"Synonyme de « rapide » ?",ch:["lent","vite","loin","fort"],a:1},
+      {q:"« Aride » signifie :",ch:["humide","sec","vert","froid"],a:1},
+      {q:"Antonyme de « construire » ?",ch:["bâtir","ériger","démolir","fabriquer"],a:2},
+      {q:"Quel mot est un homonyme de « ver » ?",ch:["verre seulement","vert seulement","vélo","verre et vert"],a:3},
+    ],
+  },
+  hi:{
+    prehistoire:[
+      {q:"Quand apparaissent les premiers hommes ?",ch:["Il y a 500 ans","Il y a 10 000 ans","Il y a 3 millions d'années","Il y a 65 millions d'années"],a:2},
+      {q:"Les hommes qui se déplacent pour chasser s'appellent :",ch:["Agriculteurs","Nomades","Sédentaires","Artisans"],a:1},
+      {q:"Grande découverte de l'homme préhistorique :",ch:["La roue","Le feu","L'écriture","Les métaux"],a:1},
+      {q:"La grotte de Lascaux contient :",ch:["Des outils","Des peintures préhistoriques","Des fossiles","Des menhirs"],a:1},
+      {q:"La Préhistoire, c'est la période :",ch:["Avant l'écriture","Des pharaons","Du Moyen Âge","De la Révolution"],a:0},
+      {q:"Un menhir, c'est :",ch:["Une peinture","Une grande pierre dressée","Un outil","Une grotte"],a:1},
+      {q:"Le Néolithique commence :",ch:["Il y a 300 000 ans","Il y a 10 000 ans","Il y a 2 000 ans","Il y a 1 million d'années"],a:1},
+      {q:"L'outil de l'homme préhistorique :",ch:["Le marteau en fer","Le silex taillé","L'arc en métal","La scie"],a:1},
+    ],
+    moyenage:[
+      {q:"Le Moyen Âge se situe :",ch:["Dans l'Antiquité","Entre le Ve et le XVe siècle","Au XVIIe siècle","Au XIXe siècle"],a:1},
+      {q:"Dans un château fort vivait :",ch:["Les paysans","Le seigneur","Les marchands","Les prêtres"],a:1},
+      {q:"Une cathédrale est :",ch:["Un château","La grande église du Moyen Âge","Un tribunal","Un marché"],a:1},
+      {q:"Charlemagne était :",ch:["Un roi couronné empereur","Un pape","Un général romain","Un pharaon"],a:0},
+      {q:"Un chevalier, c'est :",ch:["Un paysan","Un guerrier à cheval","Un marchand","Un moine"],a:1},
+      {q:"La fin du Moyen Âge : chute de Constantinople en :",ch:["476","800","1066","1453"],a:3},
+      {q:"Les paysans liés à la terre s'appelaient :",ch:["Chevaliers","Serfs","Bourgeois","Croisés"],a:1},
+      {q:"Une croisade, c'est :",ch:["Une fête","Un tournoi","Une expédition militaire en Terre Sainte","Un voyage"],a:2},
+    ],
+    tempsmodernes:[
+      {q:"Qui a découvert l'Amérique en 1492 ?",ch:["Magellan","Vasco de Gama","Christophe Colomb","Jacques Cartier"],a:2},
+      {q:"Louis XIV était surnommé :",ch:["Le Grand Roi","Le Roi-Soleil","Le Roi de fer","Le Roi chrétien"],a:1},
+      {q:"L'imprimerie a révolutionné :",ch:["L'agriculture","La diffusion des livres","L'armée","La navigation"],a:1},
+      {q:"Louis XIV vivait à :",ch:["Le Louvre","Versailles","Notre-Dame","La Bastille"],a:1},
+      {q:"Magellan est connu pour :",ch:["Découvrir l'Amérique","Le tour du monde","Explorer l'Afrique","Découvrir l'Australie"],a:1},
+      {q:"La Joconde est peinte par :",ch:["Michel-Ange","Raphaël","Léonard de Vinci","Botticelli"],a:2},
+      {q:"La Réforme protestante est un mouvement :",ch:["Agricole","Religieux contre l'Église catholique","Militaire","Commercial"],a:1},
+      {q:"La Renaissance, c'est :",ch:["Une guerre","Un renouveau des arts et sciences","L'invention de l'écriture","La fin de la monarchie"],a:1},
+    ],
+    revolution:[
+      {q:"La Révolution française a lieu en :",ch:["1789","1815","1776","1804"],a:0},
+      {q:"La prise de la Bastille symbolise :",ch:["La fin de la monarchie absolue","L'Empire","La chute de Napoléon","La guerre"],a:0},
+      {q:"Napoléon Bonaparte était :",ch:["Un roi","Un général devenu empereur","Un révolutionnaire","Un roi d'Angleterre"],a:1},
+      {q:"La devise de la République : ",ch:["Dieu et Roi","Liberté, Égalité, Fraternité","Travail, Famille, Patrie","Force et Honneur"],a:1},
+      {q:"Marianne est :",ch:["La couronne","Le symbole de la République","La croix","L'aigle"],a:1},
+      {q:"Le 14 juillet célèbre :",ch:["La naissance de Napoléon","La prise de la Bastille","La mort du roi","La fin de la guerre"],a:1},
+      {q:"Marie-Antoinette était :",ch:["Une révolutionnaire","La femme de Napoléon","La reine, femme de Louis XVI","Une générale"],a:2},
+      {q:"La Déclaration des droits de l'Homme proclame :",ch:["La puissance du roi","La liberté et l'égalité","L'interdiction des grèves","La création de l'armée"],a:1},
+    ],
+  },
+  ge:{
+    france:[
+      {q:"Capitale de la France ?",ch:["Lyon","Marseille","Paris","Bordeaux"],a:2},
+      {q:"Plus long fleuve de France ?",ch:["La Seine","La Loire","Le Rhône","La Garonne"],a:1},
+      {q:"Océan à l'ouest de la France ?",ch:["Indien","Arctique","Pacifique","Atlantique"],a:3},
+      {q:"Plus haute montagne de France ?",ch:["Massif Central","Vosges","Mont Blanc","Puy de Dôme"],a:2},
+      {q:"Mer au sud de la France ?",ch:["Mer du Nord","Mer Baltique","Mer Méditerranée","Mer Noire"],a:2},
+      {q:"Région de Marseille ?",ch:["Normandie","Bretagne","PACA","Occitanie"],a:2},
+      {q:"Pays au nord de la France ?",ch:["L'Espagne","L'Italie","La Belgique","Le Portugal"],a:2},
+      {q:"Fleuve qui traverse Paris ?",ch:["La Loire","Le Rhône","La Seine","La Marne"],a:2},
+    ],
+    europe:[
+      {q:"Capitale de l'Allemagne ?",ch:["Munich","Hambourg","Francfort","Berlin"],a:3},
+      {q:"Capitale de l'Espagne ?",ch:["Barcelone","Séville","Madrid","Valence"],a:2},
+      {q:"La tour de Pise est en :",ch:["Espagne","France","Grèce","Italie"],a:3},
+      {q:"Capitale du Royaume-Uni ?",ch:["Dublin","Édimbourg","Manchester","Londres"],a:3},
+      {q:"La France et l'Angleterre sont séparées par :",ch:["La mer du Nord","La Méditerranée","La Manche","L'Atlantique"],a:2},
+      {q:"Capitale de l'Italie ?",ch:["Milan","Naples","Rome","Turin"],a:2},
+      {q:"Capitale de la Belgique ?",ch:["Anvers","Bruges","Bruxelles","Liège"],a:2},
+      {q:"La péninsule ibérique comprend :",ch:["La France","L'Italie","L'Espagne et le Portugal","La Grèce"],a:2},
+    ],
+    monde:[
+      {q:"Combien de continents ?",ch:["5","6","7","8"],a:2},
+      {q:"Plus grand océan ?",ch:["Atlantique","Indien","Arctique","Pacifique"],a:3},
+      {q:"L'Égypte est en :",ch:["Asie","Europe","Afrique","Amérique"],a:2},
+      {q:"Plus grand pays du monde ?",ch:["Chine","États-Unis","Russie","Canada"],a:2},
+      {q:"Le Brésil est en :",ch:["Afrique","Asie","Europe","Amérique du Sud"],a:3},
+      {q:"Capitale des États-Unis ?",ch:["New York","Los Angeles","Washington D.C.","Chicago"],a:2},
+      {q:"La Chine est en :",ch:["Afrique","Amérique","Asie","Océanie"],a:2},
+      {q:"Plus long fleuve du monde ?",ch:["L'Amazone","Le Nil","Le Yangtsé","Le Mississippi"],a:1},
+    ],
+    relief:[
+      {q:"Une vaste étendue de terre plate s'appelle :",ch:["Montagne","Plaine","Plateau","Vallée"],a:1},
+      {q:"L'endroit où naît une rivière s'appelle :",ch:["L'embouchure","Le confluent","La source","Le méandre"],a:2},
+      {q:"Un groupe d'îles s'appelle :",ch:["Un archipel","Une presqu'île","Un isthme","Un atoll"],a:0},
+      {q:"La partie la plus haute d'une montagne s'appelle :",ch:["Le versant","La vallée","Le sommet","Le col"],a:2},
+      {q:"Une terre entourée d'eau s'appelle :",ch:["Une presqu'île","Un cap","Une île","Un isthme"],a:2},
+      {q:"Une étendue d'eau douce entourée de terres s'appelle :",ch:["Une mer","Un lac","Un fleuve","Un étang"],a:1},
+      {q:"L'endroit où un fleuve se jette dans la mer s'appelle :",ch:["La source","Le confluent","L'embouchure","Le méandre"],a:2},
+      {q:"Une terre presque entourée d'eau s'appelle :",ch:["Une île","Un cap","Une presqu'île","Un archipel"],a:2},
+    ],
+  },
+},
+// ---- CM2 ----
+cm2:{
+  ma:{
+    calcul:[
+      {q:"Combien fait 456 × 7 ?",ch:["3 192","3 812","3 102","2 952"],a:0},
+      {q:"1 000 – 387 = ?",ch:["613","623","603","713"],a:0},
+      {q:"48 ÷ 6 = ?",ch:["6","7","8","9"],a:2},
+      {q:"25 × 4 = ?",ch:["90","100","80","120"],a:1},
+      {q:"3 456 + 2 789 = ?",ch:["6 245","6 145","6 345","6 025"],a:0},
+      {q:"360 ÷ 9 = ?",ch:["30","40","45","36"],a:1},
+      {q:"Double de 347 = ?",ch:["694","684","714","674"],a:0},
+      {q:"12 × 12 = ?",ch:["132","124","144","148"],a:2},
+    ],
+    fractions:[
+      {q:"Fraction équivalente à 1/2 ?",ch:["2/3","3/6","4/6","2/5"],a:1},
+      {q:"1/4 + 1/4 = ?",ch:["1/8","1/2","3/4","2/8"],a:1},
+      {q:"La plus grande fraction ?",ch:["3/4","2/3","5/8","7/12"],a:0},
+      {q:"2/3 + 1/3 = ?",ch:["5/6","1","3/6","4/6"],a:1},
+      {q:"0,5 correspond à :",ch:["1/5","5/10","1/2","2/5"],a:2},
+      {q:"3/4 – 1/4 = ?",ch:["1/4","1/2","3/8","4/4"],a:1},
+      {q:"3 × 1/5 = ?",ch:["3/15","1/5","3/5","5/3"],a:2},
+      {q:"Fraction inférieure à 1/2 ?",ch:["3/4","5/8","3/7","2/3"],a:2},
+    ],
+    geometrie:[
+      {q:"Périmètre d'un carré de côté 8 cm ?",ch:["32 cm","24 cm","64 cm","16 cm"],a:0},
+      {q:"Aire d'un rectangle 6 cm × 4 cm ?",ch:["20 cm²","24 cm²","22 cm²","28 cm²"],a:1},
+      {q:"Un triangle équilatéral a :",ch:["2 côtés égaux","3 côtés égaux","1 angle droit","4 côtés"],a:1},
+      {q:"Périmètre d'un rectangle 10 cm × 5 cm ?",ch:["50 cm","15 cm","30 cm","20 cm"],a:2},
+      {q:"Un angle droit mesure :",ch:["45°","180°","90°","60°"],a:2},
+      {q:"Aire d'un carré de 7 cm de côté ?",ch:["28 cm²","49 cm²","14 cm²","56 cm²"],a:1},
+      {q:"Combien de faces a un cube ?",ch:["4","8","5","6"],a:3},
+      {q:"Combien de côtés a un hexagone ?",ch:["5","6","7","8"],a:1},
+    ],
+    mesures:[
+      {q:"2,5 mètres = combien de cm ?",ch:["25","250","2500","205"],a:1},
+      {q:"3 kg = combien de g ?",ch:["30","300","3000","30000"],a:2},
+      {q:"2h30 = combien de minutes ?",ch:["120","140","150","180"],a:2},
+      {q:"4 km = combien de m ?",ch:["40","400","4000","40000"],a:2},
+      {q:"1,5 litre = combien de cL ?",ch:["15","150","1500","1050"],a:1},
+      {q:"Film 1h35, début 14h10. Fin à :",ch:["15h35","15h45","15h55","16h05"],a:1},
+      {q:"5 minutes = combien de secondes ?",ch:["250","300","350","500"],a:1},
+      {q:"500 g + 1,5 kg = ?",ch:["2 kg","1,6 kg","2,5 kg","2000 g"],a:0},
+    ],
+    problemes:[
+      {q:"24 bonbons, on donne le quart. Combien reste-t-il ?",ch:["6","18","12","20"],a:1},
+      {q:"Livre à 8,50 €. Paul en achète 3. Combien dépense-t-il ?",ch:["24,50 €","25,50 €","24,00 €","26,50 €"],a:1},
+      {q:"Train à 120 km/h pendant 3h. Distance ?",ch:["360 km","240 km","420 km","300 km"],a:0},
+      {q:"30 élèves en groupes de 5. Combien de groupes ?",ch:["5","7","6","8"],a:2},
+      {q:"Léa a 45 €. Jouet à 68 €. Combien lui manque-t-il ?",ch:["13 €","23 €","33 €","43 €"],a:1},
+      {q:"8 rangées de 12 pommiers. Combien de pommiers ?",ch:["88","96","84","102"],a:1},
+      {q:"4 km/jour pendant 5 jours. Distance totale ?",ch:["16 km","24 km","20 km","18 km"],a:2},
+      {q:"48 chocolats, on en mange 15. Combien reste-t-il ?",ch:["33","23","43","37"],a:0},
+    ],
+  },
+  frcm:{
+    grammaire:[
+      {q:"Fonction de « rapidement » dans « Il court rapidement » ?",ch:["Sujet","COD","CC de manière","Attribut"],a:2},
+      {q:"Dans « La maison est belle », l'attribut du sujet est :",ch:["La maison","est","belle","La maison est"],a:2},
+      {q:"Pronom personnel sujet 3e pers. pluriel ?",ch:["vous","ils/elles","nous","on"],a:1},
+      {q:"Nature de « parce que » ?",ch:["Préposition","Conj. coordination","Conj. subordination","Adverbe"],a:2},
+      {q:"CC de lieu dans « Il joue dans le jardin » ?",ch:["Il","joue","dans le jardin","jardin"],a:2},
+      {q:"Nature de « mais » ?",ch:["Conj. subordination","Adverbe","Conj. coordination","Préposition"],a:2},
+      {q:"Adjectif épithète dans « Les enfants heureux jouent » ?",ch:["Les","enfants","heureux","jouent"],a:2},
+      {q:"« que tu vois » dans « Le chat que tu vois dort » est :",ch:["Sujet","COD","Compl. du nom","Prop. relative"],a:3},
+    ],
+    conjugaison:[
+      {q:"« venir » au passé composé avec « je » :",ch:["j'ai venu","je suis venu(e)","j'étais venu","je venais"],a:1},
+      {q:"« prendre » au futur avec « nous » :",ch:["nous prenions","nous prendrons","nous prenons","nous avons pris"],a:1},
+      {q:"« aller » au passé composé avec « elle » :",ch:["elle a allé","elle allait","elle est allée","elle ira"],a:2},
+      {q:"« savoir » au présent avec « je » :",ch:["je savais","je saurais","je sais","j'ai su"],a:2},
+      {q:"Mode de « Mange tes légumes ! » ?",ch:["Indicatif","Subjonctif","Impératif","Conditionnel"],a:2},
+      {q:"« pouvoir » au conditionnel avec « il » :",ch:["il peut","il pourrait","il pouvait","il pourra"],a:1},
+      {q:"« naître » au passé composé avec « elle » :",ch:["elle a naitré","elle est née","elle naquit","elle naissait"],a:1},
+      {q:"Temps de « si tu chantais, je danserais » ?",ch:["Présent/Futur","Imparfait/Conditionnel","Passé/Présent","Futur/Imparfait"],a:1},
+    ],
+    orthographe:[
+      {q:"Accord de l'adjectif dans « des fleurs rouges » ?",ch:["rouge","rouges","rougeux","rouge-s"],a:1},
+      {q:"Pluriel de « bal » ?",ch:["bals","baux","bales","baulx"],a:0},
+      {q:"« Elle s'est... les mains » (laver) :",ch:["elle s'est lavée les mains","elle s'est lavé les mains","elle c'est lavé","elle s'est lavées les mains"],a:1},
+      {q:"Quel mot prend un trait d'union ?",ch:["arc en ciel","arc-en-ciel","arcenciel","arc-enciel"],a:1},
+      {q:"Participe passé dans « Les livres qu'il a lus » ?",ch:["lu","lus","lues","lue"],a:1},
+      {q:"Comment s'écrit « plein » ?",ch:["plein","plain","plaing","pleint"],a:0},
+      {q:"Pluriel de « genou » ?",ch:["genous","genoux","genouilles","genous"],a:1},
+      {q:"Comment écrit-on « il faut » ?",ch:["il fau","il faut","il faux","il fo"],a:1},
+    ],
+    vocabulaire:[
+      {q:"Suffixe « -tion » dans « révolution » signifie :",ch:["Qui fait l'action","Résultat ou action","Qui peut être","Qui aime"],a:1},
+      {q:"« Avoir le cafard » signifie :",ch:["Avoir peur des insectes","Être triste","Être en colère","Avoir chaud"],a:1},
+      {q:"Synonyme de « magnifique » ?",ch:["ordinaire","splendide","sombre","petit"],a:1},
+      {q:"Antonyme de « bénévole » ?",ch:["volontaire","gratuit","rémunéré","altruiste"],a:2},
+      {q:"« Périphérie » signifie :",ch:["Le centre","La zone autour d'un centre","Un quartier historique","Une route"],a:1},
+      {q:"Famille de « sol » ?",ch:["soleil","sole (poisson)","soulier","sous-sol"],a:3},
+      {q:"Préfixe « trans- » dans « transporter » signifie :",ch:["Contre","À travers, au-delà","Avant","Après"],a:1},
+      {q:"« Ubiquité » signifie :",ch:["Grande rapidité","Être partout à la fois","Grande intelligence","Voler"],a:1},
+    ],
+  },
+  hi:{
+    prehistoire:[
+      {q:"Le Paléolithique, c'est :",ch:["L'âge des métaux","L'ancienne pierre taillée","Les grandes civilisations","Le Moyen Âge"],a:1},
+      {q:"Le Néolithique est caractérisé par :",ch:["La chasse uniquement","L'agriculture et l'élevage","La découverte du feu","La poterie uniquement"],a:1},
+      {q:"Les monuments de pierres dressées s'appellent :",ch:["Des cathédrales","Des pyramides","Des mégalithes","Des tumulus"],a:2},
+      {q:"Premier métal utilisé par les préhistoriques ?",ch:["Le fer","L'or","Le cuivre","L'aluminium"],a:2},
+      {q:"L'Homo sapiens est :",ch:["Un dinosaure","L'homme actuel (~300 000 ans)","L'ancêtre du singe","Un outil"],a:1},
+      {q:"Les premiers hommes étaient nomades parce qu'ils :",ch:["Aimaient voyager","Suivaient les troupeaux","Avaient peur","N'avaient pas de maisons"],a:1},
+      {q:"La sédentarisation, c'est :",ch:["Se déplacer en groupe","S'installer durablement","Migrer vers le sud","Le nomadisme hivernal"],a:1},
+      {q:"La grotte de Lascaux est :",ch:["En Espagne","En France (Dordogne)","En Italie","En Allemagne"],a:1},
+    ],
+    moyenage:[
+      {q:"Chute de l'Empire romain d'Occident :",ch:["476","1453","800","1000"],a:0},
+      {q:"Charlemagne couronné empereur en :",ch:["800","1066","768","987"],a:0},
+      {q:"La féodalité, c'est :",ch:["Un commerce","Des liens seigneurs-vassaux","Une religion","Des marchands"],a:1},
+      {q:"Jeanne d'Arc était :",ch:["Une reine","Une paysanne guide contre les Anglais","Une religieuse","Une reine d'Angleterre"],a:1},
+      {q:"La Peste Noire au :",ch:["XIe siècle","XIIe siècle","XIIIe siècle","XIVe siècle"],a:3},
+      {q:"Une guilde, c'est :",ch:["Une armure","Une association marchands/artisans","Un impôt","Une fête"],a:1},
+      {q:"Bataille de Hastings en :",ch:["800","1066","1215","1453"],a:1},
+      {q:"Une abbaye, c'est :",ch:["Un château","Un monastère dirigé par un abbé","Un tribunal","Un marché"],a:1},
+    ],
+    tempsmodernes:[
+      {q:"Colomb découvre l'Amérique en :",ch:["1498","1488","1492","1502"],a:2},
+      {q:"L'absolutisme royal, c'est :",ch:["Pouvoir limité par le Parlement","Pouvoir total et sans partage","Monarchie élective","Régime républicain"],a:1},
+      {q:"Versailles a été construit par :",ch:["Louis XIII","Louis XV","Louis XIV","Henri IV"],a:2},
+      {q:"Les guerres de religion opposaient :",ch:["France et Angleterre","Catholiques et protestants","Croisés et musulmans","Français et Espagnols"],a:1},
+      {q:"Galilée a défendu que :",ch:["La Terre est plate","Le Soleil tourne autour de la Terre","La Terre tourne autour du Soleil","La Lune est chaude"],a:2},
+      {q:"La traite des esclaves, c'est :",ch:["Un commerce rare","Le commerce forcé d'êtres humains","Une taxe maritime","Un échange de prisonniers"],a:1},
+      {q:"Richelieu était :",ch:["Un roi","Un général de Napoléon","Un cardinal et ministre de Louis XIII","Un pape"],a:2},
+      {q:"La Renaissance est un renouveau :",ch:["Agricole","Des arts et des sciences","Militaire","Religieux uniquement"],a:1},
+    ],
+    revolution:[
+      {q:"Cause principale de la Révolution française ?",ch:["Une guerre contre l'Angleterre","Misère et inégalités","L'invasion de la France","Mort de Louis XIV"],a:1},
+      {q:"Les États généraux de 1789 réunissaient :",ch:["Des généraux","Clergé, noblesse et tiers état","Un tribunal","Des ministres"],a:1},
+      {q:"La Terreur (1793-1794) était :",ch:["Une guerre civile","Répression sous Robespierre","Une famine","Une épidémie"],a:1},
+      {q:"Napoléon devient empereur en :",ch:["1799","1804","1815","1789"],a:1},
+      {q:"Bataille de Waterloo en :",ch:["1804","1812","1815","1799"],a:2},
+      {q:"Le Code civil napoléonien est :",ch:["Un code militaire","Des lois organisant la société civile","La Constitution","Un traité de paix"],a:1},
+      {q:"Abolition de l'esclavage en 1794 par :",ch:["Louis XVI","La Convention nationale","Napoléon","Le Directoire"],a:1},
+      {q:"Devise de la République ?",ch:["Dieu et Roi","Liberté, Égalité, Fraternité","Travail, Famille, Patrie","Force et Honneur"],a:1},
+    ],
+  },
+  ge:{
+    france:[
+      {q:"Régions de France métropolitaine depuis 2016 ?",ch:["13","22","18","15"],a:0},
+      {q:"Chaîne séparant France et Espagne ?",ch:["Les Alpes","Le Jura","Les Pyrénées","Le Massif Central"],a:2},
+      {q:"Superficie de la France métropolitaine (environ) ?",ch:["250 000 km²","750 000 km²","550 000 km²","450 000 km²"],a:2},
+      {q:"Principale activité de la Bretagne ?",ch:["Automobile","Pêche et agriculture","Tourisme de montagne","Extraction minière"],a:1},
+      {q:"Fleuve qui traverse Paris ?",ch:["La Loire","Le Rhône","La Seine","La Marne"],a:2},
+      {q:"Préfecture de l'Île-de-France ?",ch:["Versailles","Paris","Saint-Denis","Créteil"],a:1},
+      {q:"2e fleuve de France par la longueur ?",ch:["La Seine","La Garonne","Le Rhône","La Dordogne"],a:2},
+      {q:"Départements métropolitains ?",ch:["75","96","100","101"],a:1},
+    ],
+    europe:[
+      {q:"Pays membres de l'UE (environ) ?",ch:["15","27","35","50"],a:1},
+      {q:"Monnaie commune de l'UE ?",ch:["Le franc","La livre","L'euro","Le mark"],a:2},
+      {q:"Plus petit État d'Europe ?",ch:["Monaco","Andorre","Le Vatican","Saint-Marin"],a:2},
+      {q:"Pays traversé par le Danube ?",ch:["La France","L'Espagne","La Russie","La Hongrie"],a:3},
+      {q:"Capitale de la Pologne ?",ch:["Cracovie","Varsovie","Gdansk","Łódź"],a:1},
+      {q:"Détroit séparant Europe et Afrique ?",ch:["Pas-de-Calais","Messine","Gibraltar","Canal de Suez"],a:2},
+      {q:"Plus grande puissance économique d'Europe ?",ch:["La France","Le Royaume-Uni","L'Allemagne","L'Italie"],a:2},
+      {q:"Capitale des Pays-Bas ?",ch:["Rotterdam","Anvers","Amsterdam","La Haye"],a:2},
+    ],
+    monde:[
+      {q:"Population mondiale (environ) ?",ch:["4 milliards","6 milliards","8 milliards","10 milliards"],a:2},
+      {q:"L'Inde est en :",ch:["Afrique","Europe","Asie","Océanie"],a:2},
+      {q:"Capitale du Japon ?",ch:["Pékin","Séoul","Tokyo","Shanghai"],a:2},
+      {q:"Plus grand désert (surface totale) ?",ch:["Le Sahara","Désert d'Arabie","Le Gobi","L'Antarctique"],a:3},
+      {q:"Capitale de l'Australie ?",ch:["Sydney","Melbourne","Brisbane","Canberra"],a:3},
+      {q:"Le Kenya est en :",ch:["Asie","Afrique","Amérique","Océanie"],a:1},
+      {q:"Plus grand producteur de pétrole ?",ch:["Venezuela","Arabie Saoudite","Russie","États-Unis"],a:1},
+      {q:"Capitale du Canada ?",ch:["Toronto","Montréal","Vancouver","Ottawa"],a:3},
+    ],
+    relief:[
+      {q:"Un isthme, c'est :",ch:["Une île volcanique","Une bande de terre entre deux mers","Un bras de mer","Un lac salé"],a:1},
+      {q:"Le bassin versant d'un fleuve, c'est :",ch:["La partie près de la mer","Les terres dont les eaux rejoignent ce fleuve","Le delta","La source"],a:1},
+      {q:"Une falaise, c'est :",ch:["Une plaine côtière","Une paroi rocheuse abrupte","Un banc de sable","Un récif"],a:1},
+      {q:"Un volcan effusif, c'est un volcan :",ch:["Qui explose","Dont la lave coule lentement","Éteint","Sous-marin"],a:1},
+      {q:"La tectonique des plaques explique :",ch:["Les marées","Les nuages","Les tremblements de terre et montagnes","Les saisons"],a:2},
+      {q:"La ligne de faîte, c'est :",ch:["Le fond d'une vallée","La ligne de partage des eaux en montagne","Le bord d'un fleuve","La côte d'une île"],a:1},
+      {q:"Une plaine alluviale est formée par :",ch:["Des éruptions","Les dépôts d'un fleuve","L'érosion du vent","La fonte des glaciers"],a:1},
+      {q:"Un delta, c'est :",ch:["Un volcan","Un désert","Une embouchure en plusieurs bras","Un lac de montagne"],a:2},
+    ],
+  },
+},
+};
+
+// ============================================================
+//  CONFIG
+// ============================================================
+const LEVELS = {
+  gs:{label:"GS",color:"gs",subjects:{ma:{label:"Maths",icon:"🔢",cats:{compter:"Compter",formes:"Formes",additions:"Additions"}},fr:{label:"Français",icon:"📖",cats:{lettres:"Lettres",syllabes:"Syllabes",mots:"Mots"}},ev:{label:"Éveil",icon:"🌿",cats:{animaux:"Animaux",couleurs:"Couleurs",nature:"Nature"}}}},
+  cp:{label:"CP",color:"cp",subjects:{ma:{label:"Maths",icon:"🔢",cats:{nombres:"Nombres",formes:"Formes",additions:"Additions"}},fr:{label:"Français",icon:"📖",cats:{phonologie:"Phonologie",lecture:"Lecture",grammaire:"Grammaire"}},ev:{label:"Éveil",icon:"🌿",cats:{animaux:"Animaux",saisons:"Saisons",corps:"Corps humain"}}}},
+  cm1:{label:"CM1",color:"cm1",subjects:{ma:{label:"Maths",icon:"🔢",cats:{calcul:"Calcul",fractions:"Fractions",geometrie:"Géométrie",mesures:"Mesures",problemes:"Problèmes"}},frcm:{label:"Français",icon:"📖",cats:{grammaire:"Grammaire",conjugaison:"Conjugaison",orthographe:"Orthographe",vocabulaire:"Vocabulaire"}},hi:{label:"Histoire",icon:"🏰",cats:{prehistoire:"Préhistoire",moyenage:"Moyen Âge",tempsmodernes:"Temps modernes",revolution:"Révolution"}},ge:{label:"Géographie",icon:"🌍",cats:{france:"France",europe:"Europe",monde:"Monde",relief:"Relief"}}}},
+  cm2:{label:"CM2",color:"cm2",subjects:{ma:{label:"Maths",icon:"🔢",cats:{calcul:"Calcul",fractions:"Fractions",geometrie:"Géométrie",mesures:"Mesures",problemes:"Problèmes"}},frcm:{label:"Français",icon:"📖",cats:{grammaire:"Grammaire",conjugaison:"Conjugaison",orthographe:"Orthographe",vocabulaire:"Vocabulaire"}},hi:{label:"Histoire",icon:"🏰",cats:{prehistoire:"Préhistoire",moyenage:"Moyen Âge",tempsmodernes:"Temps modernes",revolution:"Révolution"}},ge:{label:"Géographie",icon:"🌍",cats:{france:"France",europe:"Europe",monde:"Monde",relief:"Relief"}}}},
+};
+
+// ============================================================
+//  STATE
+// ============================================================
+let S={view:"home",level:null,subject:null,cat:null,questions:[],qIndex:0,answered:false,scoreOk:0,scoreKo:0};
+function shuffle(a){return[...a].sort(()=>Math.random()-.5)}
+
+// ============================================================
+//  RENDER
+// ============================================================
+function render(){
+  document.getElementById("score-ok").textContent=S.scoreOk;
+  document.getElementById("score-ko").textContent=S.scoreKo;
+  const m=document.getElementById("main");
+  if(S.view==="home"){renderHome(m);return}
+  if(S.view==="subject"){renderSubject(m);return}
+  if(S.view==="result"){renderResult(m);return}
+  renderQuiz(m);
+}
+
+function renderHome(m){
+  m.innerHTML=`
+    <div class="home-title">Mon École</div>
+    <div class="home-sub">Choisis ton niveau</div>
+    <div class="level-grid">
+      ${Object.entries(LEVELS).map(([k,v])=>`
+        <div class="level-card ${k}" onclick="goLevel('${k}')">
+          <div class="level-lbl">${v.label}</div>
+          <div class="level-desc">${Object.keys(v.subjects).length} matières</div>
+        </div>`).join("")}
+    </div>`;
+}
+
+function renderSubject(m){
+  const lv=LEVELS[S.level];
+  m.innerHTML=`
+    <div class="breadcrumb">
+      <span class="bc-item" onclick="home()">Accueil</span>
+      <span class="bc-sep">›</span>
+      <span class="bc-current">${lv.label}</span>
+    </div>
+    <div class="home-sub">Quelle matière ?</div>
+    <div class="subject-grid">
+      ${Object.entries(lv.subjects).map(([k,v])=>`
+        <div class="subject-card ${k}" onclick="goSubject('${k}')">
+          <div class="s-icon">${v.icon}</div>
+          <div class="s-lbl">${v.label}</div>
+          <div class="s-desc">${Object.keys(v.cats).length} thèmes</div>
+        </div>`).join("")}
+    </div>`;
+}
+
+function catPillsHtml(){
+  const cats=LEVELS[S.level].subjects[S.subject].cats;
+  return Object.entries(cats).map(([k,v])=>`<button class="cat-pill" id="pill-${k}" style="${S.cat===k?`background:var(--${S.subject}-l);border-color:var(--${S.subject});color:var(--${S.subject}-d)`:''}" onclick="goCat('${k}')">${v}</button>`).join("");
+}
+
+function renderQuiz(m){
+  const lv=LEVELS[S.level]; const sub=lv.subjects[S.subject];
+  const qs=S.questions; const q=qs[S.qIndex];
+  const pct=Math.round(S.qIndex/qs.length*100);
+  const isGS=S.level==="gs";
+  m.innerHTML=`
+    <div class="breadcrumb">
+      <span class="bc-item" onclick="home()">Accueil</span>
+      <span class="bc-sep">›</span>
+      <span class="bc-item" onclick="goLevel('${S.level}')">${lv.label}</span>
+      <span class="bc-sep">›</span>
+      <span class="bc-current">${sub.label}</span>
+    </div>
+    <div class="cat-row">${catPillsHtml()}</div>
+    <div class="q-card">
+      <div class="q-meta">
+        <div class="q-num">Q ${S.qIndex+1}/${qs.length}</div>
+        <div class="progress-wrap"><div class="progress-fill" style="width:${pct}%;background:var(--${S.subject})"></div></div>
+        <div class="q-badge">${sub.cats[S.cat]}</div>
+      </div>
+      ${q.e?`<div class="q-emoji">${q.e}</div>`:""}
+      <div class="q-text">${q.q}</div>
+      <div class="choices${isGS?" big":""}">
+        ${q.ch.map((c,i)=>`<button class="choice-btn" id="ch${i}" onclick="answer(${i})">${c}</button>`).join("")}
+      </div>
+      <div class="feedback" id="feedback"></div>
+      <div class="nav-row">
+        <button class="btn" onclick="goLevel('${S.level}')">← Matières</button>
+        <button class="btn p-${S.subject}" id="next-btn" style="display:none" onclick="nextQ()">Suivant →</button>
+      </div>
+    </div>`;
+}
+
+function renderResult(m){
+  const sub=LEVELS[S.level].subjects[S.subject];
+  const total=S.questions.length; const ok=S.scoreOk;
+  const pct=Math.round(ok/total*100);
+  const emoji=pct>=80?"🌟":pct>=60?"👍":pct>=40?"💪":"📚";
+  const msg=pct>=80?"Excellent, bravo !":pct>=60?"Bien joué, continue !":pct>=40?"Pas mal, entraîne-toi encore !":"Courage, tu vas progresser !";
+  m.innerHTML=`
+    <div class="breadcrumb">
+      <span class="bc-item" onclick="home()">Accueil</span>
+      <span class="bc-sep">›</span>
+      <span class="bc-item" onclick="goLevel('${S.level}')">${LEVELS[S.level].label}</span>
+      <span class="bc-sep">›</span>
+      <span class="bc-current">${sub.label}</span>
+    </div>
+    <div class="result-card">
+      <div class="result-emoji">${emoji}</div>
+      <div class="result-score" style="color:var(--${S.subject})">${ok} / ${total}</div>
+      <div class="result-pct">${pct}% · ${sub.cats[S.cat]}</div>
+      <div class="result-msg">${msg}</div>
+      <div class="result-btns">
+        <button class="btn p-${S.subject}" onclick="restartSame()">Recommencer</button>
+        <button class="btn" onclick="goLevel('${S.level}')">Changer de matière</button>
+        <button class="btn" onclick="home()">Accueil</button>
+      </div>
+    </div>`;
+}
+
+// ============================================================
+//  ACTIONS
+// ============================================================
+function home(){S.view="home";render()}
+function goLevel(lv){S.level=lv;S.view="subject";render()}
+function goSubject(sub){S.subject=sub;const firstCat=Object.keys(LEVELS[S.level].subjects[sub].cats)[0];goCat(firstCat)}
+function goCat(cat){
+  S.cat=cat;S.scoreOk=0;S.scoreKo=0;
+  S.questions=shuffle(DATA[S.level][S.subject][cat]).slice(0,6);
+  S.qIndex=0;S.answered=false;S.view="quiz";render();
+}
+function answer(idx){
+  if(S.answered)return; S.answered=true;
+  const q=S.questions[S.qIndex]; const correct=q.a;
+  document.querySelectorAll(".choice-btn").forEach((btn,i)=>{btn.disabled=true;if(i===correct&&i!==idx)btn.classList.add("reveal")});
+  const fb=document.getElementById("feedback");
+  if(idx===correct){document.getElementById("ch"+idx).classList.add("correct");fb.className="feedback ok";fb.textContent="✓ Bravo, bonne réponse !";S.scoreOk++;}
+  else{document.getElementById("ch"+idx).classList.add("wrong");fb.className="feedback ko";fb.textContent="✗ La bonne réponse était : "+q.ch[correct];S.scoreKo++;}
+  document.getElementById("score-ok").textContent=S.scoreOk;
+  document.getElementById("score-ko").textContent=S.scoreKo;
+  document.getElementById("next-btn").style.display="";
+}
+function nextQ(){S.qIndex++;S.answered=false;if(S.qIndex>=S.questions.length)S.view="result";render()}
+function restartSame(){S.scoreOk=0;S.scoreKo=0;S.questions=shuffle(DATA[S.level][S.subject][S.cat]).slice(0,6);S.qIndex=0;S.answered=false;S.view="quiz";render()}
+render();
+</script>
+</body>
+</html>
