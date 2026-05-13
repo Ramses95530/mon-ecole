@@ -108,9 +108,35 @@ header{background:var(--surface);border-bottom:2px solid var(--border);padding:.
 .bc{display:flex;align-items:center;gap:5px;flex-wrap:wrap;margin-bottom:1rem}
 .bc-i{font-size:13px;font-weight:700;color:var(--text3);cursor:pointer}.bc-i:hover{color:var(--text)}
 .bc-s{font-size:13px;color:var(--text3)}.bc-c{font-size:13px;font-weight:700;color:var(--text)}
+
+/* Mode (Leçons/Exercices) */
+.mode-grid{display:grid;grid-template-columns:1fr 1fr;gap:1rem;margin-top:1rem}
+.mode-card{background:var(--surface);border:2.5px solid var(--border);border-radius:var(--r);padding:1.75rem 1.25rem;cursor:pointer;transition:all .2s;text-align:center;box-shadow:var(--sh)}
+.mode-card:hover{transform:translateY(-3px);box-shadow:var(--shl)}
+.mode-icon{font-size:3rem;margin-bottom:.5rem;line-height:1}
+.mode-lbl{font-family:'Fredoka One',cursive;font-size:1.3rem;margin-bottom:.3rem}
+.mode-desc{font-size:12px;color:var(--text2);font-weight:600}
+
+/* Carte leçon */
+.lesson-card{background:var(--surface);border:2px solid var(--border);border-radius:var(--r);padding:1.1rem 1.25rem;cursor:pointer;transition:all .2s;display:flex;align-items:center;justify-content:space-between;gap:10px;box-shadow:var(--sh)}
+.lesson-card:hover{transform:translateX(3px);box-shadow:var(--shl)}
+.lesson-title{font-family:'Nunito',sans-serif;font-weight:800;font-size:1rem;flex:1}
+.lesson-cta{font-size:12px;font-weight:700;white-space:nowrap}
+
+/* Vue leçon */
+.lesson-view{background:var(--surface);border:2px solid var(--border);border-radius:var(--r);padding:1.5rem;box-shadow:var(--sh)}
+
+/* Bouton En savoir plus */
+.btn-detailed{width:100%;padding:11px 14px;margin:.5rem 0;font-family:'Nunito',sans-serif;font-size:14px;font-weight:800;border:2px solid var(--border);border-radius:var(--rs);background:var(--surface);cursor:pointer;transition:all .18s}
+.btn-detailed:hover{background:var(--surface2);transform:translateY(-1px);box-shadow:var(--sh)}
+
+/* Boîte détaillée */
+.detailed-box{background:var(--surface2);border:2px solid var(--border);border-radius:var(--rs);padding:1.25rem;margin:.5rem 0;animation:fadeUp .25s ease}
+
 @media(max-width:500px){
   .choices,.level-grid,.diff-grid{grid-template-columns:1fr}
   .subj-grid{grid-template-columns:1fr 1fr}
+  .mode-grid{grid-template-columns:1fr}
   .main{padding:1rem}
   .qtext{font-size:1rem}
   .logo{font-size:1.15rem}
@@ -158,15 +184,78 @@ function makeChoices(correct, generator, count = 4) {
 // ════════════════════════════════════════════════════════
 //  SYNTHÈSE VOCALE
 // ════════════════════════════════════════════════════════
-function speak(text){
-  if(!window.speechSynthesis)return;
+// Nettoyer le texte pour la voix (retire emojis, [[...]], etc.)
+function cleanForSpeech(text) {
+  return String(text)
+    .replace(/\[\[/g, '').replace(/\]\]/g, '')
+    .replace(/[\u{1F000}-\u{1FFFF}]/gu,'')
+    .replace(/[→•]/g,'')
+    .trim();
+}
+
+// Détecte si une chaîne contient surtout du texte entre [[...]]
+function hasEnglishMarkers(text) {
+  return /\[\[[^\]]+\]\]/.test(String(text));
+}
+
+// Voix avec choix de langue
+function speak(text, lang) {
+  if (!window.speechSynthesis) return;
   window.speechSynthesis.cancel();
-  const clean=String(text).replace(/[\u{1F000}-\u{1FFFF}]/gu,'').replace(/[→•]/g,'').trim();
-  const u=new SpeechSynthesisUtterance(clean);
-  u.lang='fr-FR';u.rate=0.85;u.pitch=1.1;
+  // Si pas de langue, on détecte automatiquement
+  if (!lang) {
+    lang = hasEnglishMarkers(text) ? 'mixed' : 'fr-FR';
+  }
+  if (lang === 'mixed') {
+    speakMixed(text);
+    return;
+  }
+  const clean = cleanForSpeech(text);
+  if (!clean) return;
+  const u = new SpeechSynthesisUtterance(clean);
+  u.lang = lang;
+  u.rate = (lang === 'en-US' || lang === 'en-GB') ? 0.8 : 0.85;
+  u.pitch = 1.1;
   window.speechSynthesis.speak(u);
 }
+
+// Lit un texte mêlant français et anglais (parties [[...]])
+function speakMixed(text) {
+  if (!window.speechSynthesis) return;
+  window.speechSynthesis.cancel();
+  // Découpe en segments alternant français et anglais
+  const segments = [];
+  let lastIndex = 0;
+  const regex = /\[\[([^\]]+)\]\]/g;
+  let match;
+  while ((match = regex.exec(text)) !== null) {
+    if (match.index > lastIndex) {
+      segments.push({ text: text.slice(lastIndex, match.index), lang: 'fr-FR' });
+    }
+    segments.push({ text: match[1], lang: 'en-GB' });
+    lastIndex = match.index + match[0].length;
+  }
+  if (lastIndex < text.length) {
+    segments.push({ text: text.slice(lastIndex), lang: 'fr-FR' });
+  }
+  // Lecture en chaîne
+  segments.forEach(seg => {
+    const clean = cleanForSpeech(seg.text);
+    if (!clean) return;
+    const u = new SpeechSynthesisUtterance(clean);
+    u.lang = seg.lang;
+    u.rate = seg.lang === 'en-GB' ? 0.8 : 0.85;
+    u.pitch = 1.1;
+    window.speechSynthesis.speak(u);
+  });
+}
+
 function stopSpeech(){if(window.speechSynthesis)window.speechSynthesis.cancel()}
+
+// Retire les marqueurs [[...]] pour l'affichage HTML, en mettant en évidence l'anglais
+function renderEnglish(text) {
+  return String(text).replace(/\[\[([^\]]+)\]\]/g, '<strong style="color:var(--cm2);font-style:italic">$1</strong>');
+}
 
 // ════════════════════════════════════════════════════════
 //  GÉNÉRATEURS DE QUESTIONS DYNAMIQUES POUR LES MATHS
@@ -1656,6 +1745,502 @@ const BANK = {
 };
 
 // ════════════════════════════════════════════════════════
+//  BANQUE ANGLAIS - tous niveaux, avec marqueurs vocaux
+// ════════════════════════════════════════════════════════
+// Format: q peut contenir [[mot anglais]] qui sera lu en anglais
+// Les choix peuvent aussi contenir [[mot]] pour la lecture
+const ENGLISH = {
+  gs: {
+    colors: {
+      easy: [
+        {q:"Quelle couleur est [[RED]] ?",e:"🔴",ch:["bleu","rouge","vert","jaune"],a:1,ex:"RED se prononce \"rède\" = rouge."},
+        {q:"Quelle couleur est [[BLUE]] ?",e:"🔵",ch:["bleu","rouge","vert","jaune"],a:0,ex:"BLUE se prononce \"blou\" = bleu."},
+        {q:"Quelle couleur est [[YELLOW]] ?",e:"🟡",ch:["bleu","rouge","vert","jaune"],a:3,ex:"YELLOW se prononce \"yèlo\" = jaune."},
+        {q:"Quelle couleur est [[GREEN]] ?",e:"🟢",ch:["bleu","rouge","vert","jaune"],a:2,ex:"GREEN se prononce \"grine\" = vert."},
+        {q:"Quelle couleur est [[WHITE]] ?",e:"⚪",ch:["noir","blanc","rose","gris"],a:1,ex:"WHITE se prononce \"ouaïte\" = blanc."},
+        {q:"Quelle couleur est [[BLACK]] ?",e:"⚫",ch:["noir","blanc","rose","gris"],a:0,ex:"BLACK se prononce \"blaque\" = noir."},
+      ],
+      medium: [
+        {q:"Comment dit-on ROUGE en anglais ?",ch:["[[BLUE]]","[[RED]]","[[GREEN]]","[[YELLOW]]"],a:1,ex:"Rouge = RED."},
+        {q:"Comment dit-on BLEU en anglais ?",ch:["[[BLUE]]","[[RED]]","[[GREEN]]","[[YELLOW]]"],a:0,ex:"Bleu = BLUE."},
+        {q:"Comment dit-on JAUNE en anglais ?",ch:["[[BLUE]]","[[RED]]","[[GREEN]]","[[YELLOW]]"],a:3,ex:"Jaune = YELLOW."},
+        {q:"Comment dit-on VERT en anglais ?",ch:["[[BLUE]]","[[RED]]","[[GREEN]]","[[YELLOW]]"],a:2,ex:"Vert = GREEN."},
+        {q:"Comment dit-on NOIR en anglais ?",ch:["[[BLACK]]","[[WHITE]]","[[PINK]]","[[GREY]]"],a:0,ex:"Noir = BLACK."},
+      ],
+      hard: [
+        {q:"Quelle couleur est [[PINK]] ?",e:"🩷",ch:["rose","violet","orange","marron"],a:0,ex:"PINK = rose."},
+        {q:"Quelle couleur est [[ORANGE]] ?",e:"🟠",ch:["rose","violet","orange","marron"],a:2,ex:"ORANGE = orange (pareil)."},
+        {q:"Quelle couleur est [[PURPLE]] ?",e:"🟣",ch:["rose","violet","orange","marron"],a:1,ex:"PURPLE = violet."},
+        {q:"Quelle couleur est [[BROWN]] ?",ch:["rose","violet","orange","marron"],a:3,ex:"BROWN = marron."},
+        {q:"Comment dit-on ROSE en anglais ?",ch:["[[PURPLE]]","[[PINK]]","[[ORANGE]]","[[BROWN]]"],a:1,ex:"Rose = PINK."},
+      ],
+      vhard: [
+        {q:"Quelle couleur est [[GREY]] ?",ch:["gris","rose","violet","jaune"],a:0,ex:"GREY = gris."},
+        {q:"[[My pencil is BLUE]] veut dire ?",ch:["Mon crayon est rouge","Mon crayon est bleu","Mon crayon est vert","Mon crayon est noir"],a:1,ex:"BLUE = bleu."},
+        {q:"[[The sun is YELLOW]] veut dire ?",ch:["Le soleil est rouge","Le soleil est bleu","Le soleil est jaune","Le soleil est blanc"],a:2,ex:"YELLOW = jaune."},
+        {q:"Drapeau français : [[BLUE]] [[WHITE]] [[RED]] ?",ch:["bleu blanc rouge","rouge blanc bleu","vert blanc rouge","bleu blanc vert"],a:0,ex:"BLUE-WHITE-RED."},
+      ],
+    },
+    numbers: {
+      easy: [
+        {q:"Que veut dire [[ONE]] ?",ch:["1","2","3","4"],a:0,ex:"ONE = 1."},
+        {q:"Que veut dire [[TWO]] ?",ch:["1","2","3","4"],a:1,ex:"TWO = 2."},
+        {q:"Que veut dire [[THREE]] ?",ch:["1","2","3","4"],a:2,ex:"THREE = 3."},
+        {q:"Que veut dire [[FOUR]] ?",ch:["3","4","5","6"],a:1,ex:"FOUR = 4."},
+        {q:"Que veut dire [[FIVE]] ?",ch:["3","4","5","6"],a:2,ex:"FIVE = 5."},
+      ],
+      medium: [
+        {q:"Comment dit-on 1 en anglais ?",ch:["[[ONE]]","[[TWO]]","[[THREE]]","[[FOUR]]"],a:0,ex:"1 = ONE."},
+        {q:"Comment dit-on 3 en anglais ?",ch:["[[ONE]]","[[TWO]]","[[THREE]]","[[FOUR]]"],a:2,ex:"3 = THREE."},
+        {q:"Que veut dire [[SIX]] ?",ch:["5","6","7","8"],a:1,ex:"SIX = 6."},
+        {q:"Que veut dire [[SEVEN]] ?",ch:["5","6","7","8"],a:2,ex:"SEVEN = 7."},
+      ],
+      hard: [
+        {q:"Que veut dire [[EIGHT]] ?",ch:["7","8","9","10"],a:1,ex:"EIGHT = 8."},
+        {q:"Que veut dire [[NINE]] ?",ch:["7","8","9","10"],a:2,ex:"NINE = 9."},
+        {q:"Que veut dire [[TEN]] ?",ch:["7","8","9","10"],a:3,ex:"TEN = 10."},
+        {q:"Comment dit-on 7 ?",ch:["[[SIX]]","[[SEVEN]]","[[EIGHT]]","[[NINE]]"],a:1,ex:"7 = SEVEN."},
+      ],
+      vhard: [
+        {q:"[[I have TWO cats]] veut dire ?",ch:["J'ai 1 chat","J'ai 2 chats","J'ai 3 chats","J'ai 4 chats"],a:1,ex:"TWO = 2."},
+        {q:"Combien font [[ONE plus TWO]] ?",ch:["[[TWO]]","[[THREE]]","[[FOUR]]","[[FIVE]]"],a:1,ex:"1+2 = 3 = THREE."},
+        {q:"Ordre : [[ONE, TWO]], ? ",ch:["[[FOUR]]","[[FIVE]]","[[THREE]]","[[SIX]]"],a:2,ex:"Après TWO : THREE."},
+      ],
+    },
+    animals: {
+      easy: [
+        {q:"Que veut dire [[CAT]] ?",e:"🐱",ch:["chien","chat","lapin","oiseau"],a:1,ex:"CAT = chat."},
+        {q:"Que veut dire [[DOG]] ?",e:"🐶",ch:["chien","chat","lapin","oiseau"],a:0,ex:"DOG = chien."},
+        {q:"Que veut dire [[BIRD]] ?",e:"🐦",ch:["chien","chat","lapin","oiseau"],a:3,ex:"BIRD = oiseau."},
+        {q:"Que veut dire [[FISH]] ?",e:"🐟",ch:["poisson","chat","chien","lapin"],a:0,ex:"FISH = poisson."},
+        {q:"Que veut dire [[RABBIT]] ?",e:"🐰",ch:["lapin","chat","chien","oiseau"],a:0,ex:"RABBIT = lapin."},
+      ],
+      medium: [
+        {q:"Comment dit-on CHAT ?",ch:["[[DOG]]","[[CAT]]","[[BIRD]]","[[FISH]]"],a:1,ex:"Chat = CAT."},
+        {q:"Comment dit-on CHIEN ?",ch:["[[DOG]]","[[CAT]]","[[BIRD]]","[[FISH]]"],a:0,ex:"Chien = DOG."},
+        {q:"Que veut dire [[HORSE]] ?",ch:["cheval","vache","mouton","cochon"],a:0,ex:"HORSE = cheval."},
+        {q:"Que veut dire [[COW]] ?",ch:["cheval","vache","mouton","cochon"],a:1,ex:"COW = vache."},
+      ],
+      hard: [
+        {q:"Que veut dire [[MOUSE]] ?",ch:["souris","lapin","rat","hamster"],a:0,ex:"MOUSE = souris."},
+        {q:"Que veut dire [[SHEEP]] ?",ch:["mouton","cochon","chèvre","vache"],a:0,ex:"SHEEP = mouton."},
+        {q:"Que veut dire [[DUCK]] ?",ch:["canard","oie","poule","pigeon"],a:0,ex:"DUCK = canard."},
+        {q:"Que veut dire [[PIG]] ?",ch:["cheval","vache","mouton","cochon"],a:3,ex:"PIG = cochon."},
+      ],
+      vhard: [
+        {q:"Que veut dire [[BEAR]] ?",ch:["ours","singe","loup","lion"],a:0,ex:"BEAR = ours."},
+        {q:"Que veut dire [[ELEPHANT]] ?",ch:["girafe","éléphant","lion","tigre"],a:1,ex:"ELEPHANT = éléphant."},
+        {q:"[[The CAT is on the table]] ?",ch:["Le chien","Le chat est sur la table","Le lapin","L'oiseau"],a:1,ex:"CAT = chat."},
+        {q:"Que veut dire [[MONKEY]] ?",ch:["singe","ours","lion","tigre"],a:0,ex:"MONKEY = singe."},
+      ],
+    },
+  },
+  cp: {
+    greetings: {
+      easy: [
+        {q:"Que veut dire [[HELLO]] ?",ch:["au revoir","bonjour","merci","s'il te plaît"],a:1,ex:"HELLO = bonjour."},
+        {q:"Que veut dire [[GOODBYE]] ?",ch:["au revoir","bonjour","merci","oui"],a:0,ex:"GOODBYE = au revoir."},
+        {q:"Que veut dire [[THANK YOU]] ?",ch:["pardon","s'il te plaît","merci","bonjour"],a:2,ex:"THANK YOU = merci."},
+        {q:"Que veut dire [[YES]] ?",ch:["oui","non","merci","peut-être"],a:0,ex:"YES = oui."},
+        {q:"Que veut dire [[NO]] ?",ch:["oui","non","merci","peut-être"],a:1,ex:"NO = non."},
+      ],
+      medium: [
+        {q:"Que veut dire [[PLEASE]] ?",ch:["merci","s'il te plaît","pardon","au revoir"],a:1,ex:"PLEASE = s'il te plaît."},
+        {q:"Que veut dire [[SORRY]] ?",ch:["pardon","merci","au revoir","bonjour"],a:0,ex:"SORRY = pardon."},
+        {q:"Comment dit-on BONJOUR ?",ch:["[[GOODBYE]]","[[HELLO]]","[[THANK YOU]]","[[SORRY]]"],a:1,ex:"Bonjour = HELLO."},
+      ],
+      hard: [
+        {q:"Que veut dire [[GOOD MORNING]] ?",ch:["bonsoir","bonjour (matin)","bonne nuit","au revoir"],a:1,ex:"GOOD MORNING = bonjour (matin)."},
+        {q:"Que veut dire [[GOOD NIGHT]] ?",ch:["bonjour","bonne nuit","bonsoir","au revoir"],a:1,ex:"GOOD NIGHT = bonne nuit."},
+        {q:"Que veut dire [[HOW ARE YOU]] ?",ch:["comment vas-tu ?","quel est ton nom ?","quel âge as-tu ?","où es-tu ?"],a:0,ex:"HOW ARE YOU = comment vas-tu ?"},
+        {q:"Que veut dire [[MY NAME IS]] ?",ch:["j'ai... ans","je m'appelle","je vais bien","je vais à"],a:1,ex:"MY NAME IS = je m'appelle."},
+      ],
+      vhard: [
+        {q:"[[Hello, my name is Tom]] ?",ch:["Bonjour, je suis Tom","Au revoir Tom","Tom dit bonjour","Tom est là"],a:0,ex:"My name is Tom = Je m'appelle Tom."},
+        {q:"[[I'm fine, thank you]] ?",ch:["Je suis fâché","Je vais bien, merci","Je suis fatigué","Je suis perdu"],a:1,ex:"FINE = bien."},
+        {q:"Réponse à [[Nice to meet you]] ?",ch:["[[No]]","[[Goodbye]]","[[Nice to meet you too]]","[[Sorry]]"],a:2,ex:"Réponse : Enchanté aussi."},
+      ],
+    },
+    family: {
+      easy: [
+        {q:"Que veut dire [[FATHER]] ?",ch:["mère","père","frère","sœur"],a:1,ex:"FATHER = père."},
+        {q:"Que veut dire [[MOTHER]] ?",ch:["mère","père","frère","sœur"],a:0,ex:"MOTHER = mère."},
+        {q:"Que veut dire [[BROTHER]] ?",ch:["mère","père","frère","sœur"],a:2,ex:"BROTHER = frère."},
+        {q:"Que veut dire [[SISTER]] ?",ch:["mère","père","frère","sœur"],a:3,ex:"SISTER = sœur."},
+      ],
+      medium: [
+        {q:"Que veut dire [[FAMILY]] ?",ch:["maison","famille","école","ami"],a:1,ex:"FAMILY = famille."},
+        {q:"Que veut dire [[BABY]] ?",ch:["bébé","enfant","adulte","vieux"],a:0,ex:"BABY = bébé."},
+        {q:"Comment dit-on FRÈRE ?",ch:["[[FATHER]]","[[MOTHER]]","[[BROTHER]]","[[SISTER]]"],a:2,ex:"Frère = BROTHER."},
+      ],
+      hard: [
+        {q:"Que veut dire [[GRANDFATHER]] ?",ch:["père","grand-père","oncle","cousin"],a:1,ex:"GRANDFATHER = grand-père."},
+        {q:"Que veut dire [[GRANDMOTHER]] ?",ch:["mère","grand-mère","tante","cousine"],a:1,ex:"GRANDMOTHER = grand-mère."},
+        {q:"Que veut dire [[UNCLE]] ?",ch:["père","oncle","cousin","frère"],a:1,ex:"UNCLE = oncle."},
+        {q:"Que veut dire [[AUNT]] ?",ch:["mère","tante","cousine","sœur"],a:1,ex:"AUNT = tante."},
+      ],
+      vhard: [
+        {q:"[[My sister is here]] ?",ch:["Ma mère est là","Ma sœur est là","Mon frère est là","Mon père est là"],a:1,ex:"SISTER = sœur."},
+        {q:"[[I love my family]] ?",ch:["J'aime ma maison","J'aime ma famille","J'aime mon école","J'aime mon ami"],a:1,ex:"FAMILY = famille."},
+        {q:"Que veut dire [[COUSIN]] ?",ch:["cousin","frère","oncle","grand-père"],a:0,ex:"COUSIN = cousin."},
+      ],
+    },
+    school: {
+      easy: [
+        {q:"Que veut dire [[SCHOOL]] ?",ch:["maison","école","magasin","église"],a:1,ex:"SCHOOL = école."},
+        {q:"Que veut dire [[BOOK]] ?",ch:["livre","stylo","cahier","sac"],a:0,ex:"BOOK = livre."},
+        {q:"Que veut dire [[PEN]] ?",ch:["livre","stylo","cahier","sac"],a:1,ex:"PEN = stylo."},
+        {q:"Que veut dire [[BAG]] ?",ch:["livre","stylo","cahier","sac"],a:3,ex:"BAG = sac."},
+      ],
+      medium: [
+        {q:"Que veut dire [[TEACHER]] ?",ch:["élève","maître","directeur","ami"],a:1,ex:"TEACHER = maître."},
+        {q:"Que veut dire [[STUDENT]] ?",ch:["élève","maître","directeur","ami"],a:0,ex:"STUDENT = élève."},
+        {q:"Que veut dire [[PENCIL]] ?",ch:["stylo","crayon","gomme","règle"],a:1,ex:"PENCIL = crayon."},
+      ],
+      hard: [
+        {q:"Que veut dire [[CLASSROOM]] ?",ch:["cour","classe","préau","bibliothèque"],a:1,ex:"CLASSROOM = salle de classe."},
+        {q:"Que veut dire [[DESK]] ?",ch:["chaise","bureau","tableau","fenêtre"],a:1,ex:"DESK = bureau."},
+        {q:"Que veut dire [[CHAIR]] ?",ch:["chaise","bureau","tableau","fenêtre"],a:0,ex:"CHAIR = chaise."},
+        {q:"Que veut dire [[BOARD]] ?",ch:["chaise","bureau","tableau","fenêtre"],a:2,ex:"BOARD = tableau."},
+      ],
+      vhard: [
+        {q:"[[I read a book]] ?",ch:["Je vois un livre","Je lis un livre","J'écris un livre","J'achète un livre"],a:1,ex:"READ = lire."},
+        {q:"[[The teacher is nice]] ?",ch:["Le directeur est gentil","Le maître est gentil","L'élève est gentil","L'ami est gentil"],a:1,ex:"TEACHER = maître."},
+      ],
+    },
+  },
+  cm1: {
+    vocabulaire: {
+      easy: [
+        {q:"Que veut dire [[HOUSE]] ?",ch:["école","maison","jardin","voiture"],a:1,ex:"HOUSE = maison."},
+        {q:"Que veut dire [[CAR]] ?",ch:["maison","voiture","train","avion"],a:1,ex:"CAR = voiture."},
+        {q:"Que veut dire [[WATER]] ?",ch:["eau","feu","terre","air"],a:0,ex:"WATER = eau."},
+        {q:"Que veut dire [[BREAD]] ?",ch:["pain","beurre","fromage","viande"],a:0,ex:"BREAD = pain."},
+        {q:"Que veut dire [[APPLE]] ?",ch:["pomme","banane","poire","fraise"],a:0,ex:"APPLE = pomme."},
+      ],
+      medium: [
+        {q:"Que veut dire [[KITCHEN]] ?",ch:["salon","cuisine","chambre","salle de bain"],a:1,ex:"KITCHEN = cuisine."},
+        {q:"Que veut dire [[BEDROOM]] ?",ch:["salon","cuisine","chambre","salle de bain"],a:2,ex:"BEDROOM = chambre."},
+        {q:"Que veut dire [[WINDOW]] ?",ch:["porte","fenêtre","mur","plafond"],a:1,ex:"WINDOW = fenêtre."},
+        {q:"Que veut dire [[DOOR]] ?",ch:["porte","fenêtre","mur","plafond"],a:0,ex:"DOOR = porte."},
+      ],
+      hard: [
+        {q:"Que veut dire [[BREAKFAST]] ?",ch:["petit-déjeuner","déjeuner","dîner","goûter"],a:0,ex:"BREAKFAST = petit-déjeuner."},
+        {q:"Que veut dire [[DINNER]] ?",ch:["petit-déjeuner","déjeuner","dîner","goûter"],a:2,ex:"DINNER = dîner."},
+        {q:"Que veut dire [[WEATHER]] ?",ch:["temps qu'il fait","semaine","week-end","année"],a:0,ex:"WEATHER = la météo."},
+        {q:"Que veut dire [[SUMMER]] ?",ch:["hiver","été","printemps","automne"],a:1,ex:"SUMMER = été."},
+        {q:"Que veut dire [[WINTER]] ?",ch:["hiver","été","printemps","automne"],a:0,ex:"WINTER = hiver."},
+      ],
+      vhard: [
+        {q:"Que veut dire [[NEIGHBOUR]] ?",ch:["ami","voisin","cousin","ennemi"],a:1,ex:"NEIGHBOUR = voisin."},
+        {q:"Que veut dire [[AFTERNOON]] ?",ch:["matin","midi","après-midi","soir"],a:2,ex:"AFTERNOON = après-midi."},
+        {q:"Que veut dire [[WEDNESDAY]] ?",ch:["lundi","mardi","mercredi","jeudi"],a:2,ex:"WEDNESDAY = mercredi."},
+        {q:"Que veut dire [[SATURDAY]] ?",ch:["vendredi","samedi","dimanche","lundi"],a:1,ex:"SATURDAY = samedi."},
+        {q:"Que veut dire [[AUTUMN]] ?",ch:["hiver","été","printemps","automne"],a:3,ex:"AUTUMN = automne."},
+      ],
+    },
+    verbes: {
+      easy: [
+        {q:"Que veut dire [[TO BE]] ?",ch:["être","avoir","aller","faire"],a:0,ex:"TO BE = être."},
+        {q:"Que veut dire [[TO HAVE]] ?",ch:["être","avoir","aller","faire"],a:1,ex:"TO HAVE = avoir."},
+        {q:"Que veut dire [[TO GO]] ?",ch:["être","avoir","aller","faire"],a:2,ex:"TO GO = aller."},
+        {q:"Que veut dire [[TO EAT]] ?",ch:["manger","boire","dormir","courir"],a:0,ex:"TO EAT = manger."},
+        {q:"Que veut dire [[TO DRINK]] ?",ch:["manger","boire","dormir","courir"],a:1,ex:"TO DRINK = boire."},
+        {q:"Que veut dire [[TO SLEEP]] ?",ch:["manger","boire","dormir","courir"],a:2,ex:"TO SLEEP = dormir."},
+      ],
+      medium: [
+        {q:"[[I am]] = ?",ch:["je suis","j'ai","je vais","je fais"],a:0,ex:"I am = je suis."},
+        {q:"[[You are]] = ?",ch:["tu es","tu as","tu vas","tu fais"],a:0,ex:"You are = tu es."},
+        {q:"[[He is]] = ?",ch:["il est","il a","il va","il fait"],a:0,ex:"He is = il est."},
+        {q:"[[I have]] = ?",ch:["je suis","j'ai","je vais","je fais"],a:1,ex:"I have = j'ai."},
+        {q:"[[She has]] = ?",ch:["elle est","elle a","elle va","elle fait"],a:1,ex:"She has = elle a."},
+      ],
+      hard: [
+        {q:"Que veut dire [[TO READ]] ?",ch:["lire","écrire","parler","écouter"],a:0,ex:"TO READ = lire."},
+        {q:"Que veut dire [[TO WRITE]] ?",ch:["lire","écrire","parler","écouter"],a:1,ex:"TO WRITE = écrire."},
+        {q:"Que veut dire [[TO SPEAK]] ?",ch:["lire","écrire","parler","écouter"],a:2,ex:"TO SPEAK = parler."},
+        {q:"Que veut dire [[TO LISTEN]] ?",ch:["lire","écrire","parler","écouter"],a:3,ex:"TO LISTEN = écouter."},
+        {q:"[[I LIKE apples]] = ?",ch:["j'aime les pommes","je vois les pommes","je veux les pommes","je mange les pommes"],a:0,ex:"LIKE = aimer."},
+      ],
+      vhard: [
+        {q:"[[We were happy]] (hier) = ?",ch:["nous sommes","nous étions","nous serons","nous avons"],a:1,ex:"WERE = étions (passé)."},
+        {q:"[[They will come]] = ?",ch:["ils viennent","ils sont venus","ils viendront","ils venaient"],a:2,ex:"WILL = futur."},
+        {q:"[[Don't speak]] ?",ch:["Parle","Ne parle pas","As-tu parlé ?","Tu parles"],a:1,ex:"DON'T = négation."},
+        {q:"[[Do you like]] ? ?",ch:["Tu aimes","Tu n'aimes pas","Aimes-tu ?","Tu aimais"],a:2,ex:"DO ? = question."},
+      ],
+    },
+    phrases: {
+      easy: [
+        {q:"[[What is your name]] ?",ch:["Quel âge as-tu ?","Comment t'appelles-tu ?","D'où viens-tu ?","Comment vas-tu ?"],a:1,ex:"Demander le prénom."},
+        {q:"[[How old are you]] ?",ch:["Quel âge as-tu ?","Comment t'appelles-tu ?","D'où viens-tu ?","Comment vas-tu ?"],a:0,ex:"Demander l'âge."},
+        {q:"[[Where are you from]] ?",ch:["Quel âge","Comment t'appelles","D'où viens-tu ?","Comment vas-tu"],a:2,ex:"Demander l'origine."},
+      ],
+      medium: [
+        {q:"[[I am 9 years old]] = ?",ch:["Je m'appelle 9","J'ai 9 ans","Je suis le 9e","Je vais à 9"],a:1,ex:"YEARS OLD = ans."},
+        {q:"[[My name is Paul]] = ?",ch:["Je suis Paul","Je m'appelle Paul","Je vois Paul","Paul est là"],a:1,ex:"MY NAME IS = je m'appelle."},
+        {q:"[[I live in Paris]] = ?",ch:["Je viens de Paris","J'habite à Paris","Je vais à Paris","Paris est belle"],a:1,ex:"LIVE = habiter."},
+      ],
+      hard: [
+        {q:"[[Can you help me]] ?",ch:["Tu m'aides ?","Peux-tu m'aider ?","Tu peux venir ?","Tu veux quoi ?"],a:1,ex:"CAN = pouvoir."},
+        {q:"[[I would like a cake]] ?",ch:["J'aime le gâteau","Je voudrais un gâteau","J'ai un gâteau","Je fais un gâteau"],a:1,ex:"WOULD LIKE = je voudrais."},
+        {q:"[[What time is it]] ?",ch:["Quelle heure est-il ?","Combien ça coûte ?","Quel temps fait-il ?","Où vas-tu ?"],a:0,ex:"WHAT TIME = quelle heure."},
+      ],
+      vhard: [
+        {q:"[[She has been to London]] ?",ch:["Elle va à Londres","Elle est allée à Londres","Elle aime Londres","Elle quitte Londres"],a:1,ex:"HAS BEEN = est allée (présent parfait)."},
+        {q:"[[If I were rich, I would travel]] ?",ch:["Si j'étais riche, je voyagerais","J'étais riche et je voyageais","Je suis riche donc je voyage","Je serai riche, je voyagerai"],a:0,ex:"Conditionnel."},
+        {q:"[[I'm looking forward to it]] ?",ch:["Je suis devant","J'attends avec impatience","Je regarde devant moi","Je suis prêt"],a:1,ex:"Expression idiomatique."},
+      ],
+    },
+  },
+  cm2: {
+    vocabulaire: {
+      easy: [
+        {q:"Que veut dire [[CITY]] ?",ch:["village","ville","campagne","quartier"],a:1,ex:"CITY = ville."},
+        {q:"Que veut dire [[COUNTRY]] ?",ch:["ville","pays","région","capitale"],a:1,ex:"COUNTRY = pays."},
+        {q:"Que veut dire [[MONEY]] ?",ch:["argent","or","banque","prix"],a:0,ex:"MONEY = argent."},
+        {q:"Que veut dire [[FRIEND]] ?",ch:["famille","ami","ennemi","voisin"],a:1,ex:"FRIEND = ami."},
+        {q:"Que veut dire [[WORK]] ?",ch:["travail","école","maison","jeu"],a:0,ex:"WORK = travail."},
+      ],
+      medium: [
+        {q:"Que veut dire [[BREAKFAST]] ?",ch:["petit-déj","déjeuner","dîner","goûter"],a:0,ex:"BREAKFAST."},
+        {q:"Que veut dire [[NEWSPAPER]] ?",ch:["livre","journal","magazine","lettre"],a:1,ex:"NEWSPAPER = journal."},
+        {q:"Que veut dire [[BUSY]] ?",ch:["libre","occupé","fatigué","heureux"],a:1,ex:"BUSY = occupé."},
+        {q:"Que veut dire [[CHEAP]] ?",ch:["cher","bon marché","gratuit","vendu"],a:1,ex:"CHEAP = bon marché."},
+      ],
+      hard: [
+        {q:"Que veut dire [[BORROW]] ?",ch:["prêter","emprunter","donner","vendre"],a:1,ex:"BORROW = emprunter."},
+        {q:"Que veut dire [[LEND]] ?",ch:["prêter","emprunter","donner","vendre"],a:0,ex:"LEND = prêter."},
+        {q:"Que veut dire [[ENOUGH]] ?",ch:["trop","assez","peu","beaucoup"],a:1,ex:"ENOUGH = assez."},
+        {q:"Que veut dire [[ALREADY]] ?",ch:["encore","déjà","jamais","souvent"],a:1,ex:"ALREADY = déjà."},
+      ],
+      vhard: [
+        {q:"Que veut dire [[NEVERTHELESS]] ?",ch:["cependant","jamais","sans cesse","ensuite"],a:0,ex:"NEVERTHELESS = cependant."},
+        {q:"Que veut dire [[ACHIEVEMENT]] ?",ch:["réussite","échec","essai","abandon"],a:0,ex:"ACHIEVEMENT = réussite."},
+        {q:"Que veut dire [[OPPORTUNITY]] ?",ch:["danger","occasion","menace","décision"],a:1,ex:"OPPORTUNITY = occasion."},
+        {q:"Que veut dire [[HOWEVER]] ?",ch:["en plus","cependant","pareillement","donc"],a:1,ex:"HOWEVER = cependant."},
+      ],
+    },
+    grammaire: {
+      easy: [
+        {q:"Pluriel de [[CAT]] ?",ch:["[[CATS]]","[[CATES]]","[[CATY]]","[[CATIES]]"],a:0,ex:"+S."},
+        {q:"Pluriel de [[BOX]] ?",ch:["[[BOXS]]","[[BOXES]]","[[BOXIES]]","[[BOXEN]]"],a:1,ex:"X → +ES."},
+        {q:"Article devant [[APPLE]] ?",ch:["[[A]]","[[AN]]","[[THE]]","aucun"],a:1,ex:"AN devant voyelle."},
+        {q:"Article devant [[BOOK]] ?",ch:["[[A]]","[[AN]]","[[THE]]","aucun"],a:0,ex:"A devant consonne."},
+      ],
+      medium: [
+        {q:"Pluriel de [[CHILD]] ?",ch:["[[CHILDS]]","[[CHILDREN]]","[[CHILDES]]","[[CHILDRES]]"],a:1,ex:"CHILDREN (irrégulier)."},
+        {q:"Pluriel de [[FOOT]] ?",ch:["[[FOOTS]]","[[FEET]]","[[FOOTES]]","[[FEETS]]"],a:1,ex:"FEET (irrégulier)."},
+        {q:"Comparatif de [[TALL]] ?",ch:["[[TALLER]]","[[MORE TALL]]","[[TALLEST]]","[[TALLIER]]"],a:0,ex:"+ER."},
+        {q:"Superlatif de [[BIG]] ?",ch:["[[BIGGER]]","[[MOST BIG]]","[[BIGGEST]]","[[BIGGIST]]"],a:2,ex:"+EST."},
+      ],
+      hard: [
+        {q:"Prétérit de [[GO]] ?",ch:["[[GOED]]","[[WENT]]","[[GONE]]","[[GOING]]"],a:1,ex:"WENT (irrégulier)."},
+        {q:"Prétérit de [[EAT]] ?",ch:["[[EATED]]","[[ATE]]","[[EATEN]]","[[EATING]]"],a:1,ex:"ATE."},
+        {q:"Prétérit de [[SEE]] ?",ch:["[[SEED]]","[[SAW]]","[[SEEN]]","[[SAWED]]"],a:1,ex:"SAW."},
+        {q:"Comparatif de [[GOOD]] ?",ch:["[[GOODER]]","[[BETTER]]","[[BEST]]","[[MORE GOOD]]"],a:1,ex:"BETTER (irrégulier)."},
+      ],
+      vhard: [
+        {q:"Participe passé de [[EAT]] ?",ch:["[[EATEN]]","[[ATE]]","[[EATED]]","[[EATING]]"],a:0,ex:"EATEN."},
+        {q:"Participe passé de [[WRITE]] ?",ch:["[[WROTE]]","[[WRITTEN]]","[[WRITED]]","[[WRITE]]"],a:1,ex:"WRITTEN."},
+        {q:"Forme négative de [[I HAVE]] ?",ch:["[[I HAVEN'T]]","[[I NOT HAVE]]","[[I DON'T HAVE]]","[[I HAVE NOT]]"],a:2,ex:"DON'T au présent simple."},
+        {q:"Question de [[HE WORKS]] ?",ch:["[[WORKS HE]] ?","[[DOES HE WORK]] ?","[[DO HE WORK]] ?","[[HE DOES WORK]] ?"],a:1,ex:"DOES + base verbale."},
+      ],
+    },
+    phrases: {
+      easy: [
+        {q:"[[Where do you live]] ?",ch:["Où habites-tu ?","D'où viens-tu ?","Quand habites-tu ?","Pourquoi habites-tu ?"],a:0,ex:"WHERE = où."},
+        {q:"[[What do you like]] ?",ch:["Qu'aimes-tu ?","Quand aimes-tu ?","Où aimes-tu ?","Pourquoi aimes-tu ?"],a:0,ex:"WHAT = quoi."},
+        {q:"[[I am hungry]] ?",ch:["J'ai soif","J'ai faim","J'ai froid","J'ai chaud"],a:1,ex:"HUNGRY = faim."},
+      ],
+      medium: [
+        {q:"[[Can I have some water]] ?",ch:["Je veux de l'eau","Puis-je avoir de l'eau ?","J'ai de l'eau","Donne-moi de l'eau"],a:1,ex:"CAN I = puis-je."},
+        {q:"[[I don't understand]] ?",ch:["Je comprends","Je ne comprends pas","Tu ne comprends pas","Comprends-tu ?"],a:1,ex:"DON'T = négation."},
+        {q:"[[How much is it]] ?",ch:["Combien ça coûte ?","Quelle heure ?","Quel jour ?","Où est-ce ?"],a:0,ex:"HOW MUCH = combien."},
+      ],
+      hard: [
+        {q:"[[She has been working all day]] ?",ch:["Elle travaillera","Elle travaille depuis ce matin","Elle a travaillé hier","Elle travaillait"],a:1,ex:"Present perfect continuous."},
+        {q:"[[If I had money, I would buy it]] ?",ch:["Si j'ai de l'argent","Si j'avais de l'argent, je l'achèterais","J'ai eu de l'argent","Je vais avoir"],a:1,ex:"Conditionnel."},
+        {q:"[[He must be tired]] ?",ch:["Il doit être fatigué","Il a été fatigué","Il était fatigué","Il sera fatigué"],a:0,ex:"MUST = devoir (déduction)."},
+      ],
+      vhard: [
+        {q:"[[It's raining cats and dogs]] ?",ch:["Il y a des animaux","Il pleut des cordes","Il fait beau","Il pleut un peu"],a:1,ex:"Expression : il pleut beaucoup."},
+        {q:"[[I'm fed up with this]] ?",ch:["J'adore","J'en ai marre","Je suis content","Je suis fier"],a:1,ex:"FED UP = en avoir marre."},
+        {q:"[[Break a leg]] (avant un spectacle) ?",ch:["Casse-toi la jambe","Bonne chance !","Pars d'ici","Arrête"],a:1,ex:"Expression : bonne chance."},
+      ],
+    },
+  },
+};
+
+// ════════════════════════════════════════════════════════
+//  LEÇONS - Cours par niveau et matière
+// ════════════════════════════════════════════════════════
+const LESSONS = {
+  gs: {
+    ma: [
+      {t:"📊 Compter de 1 à 10",content:"Pour compter, on commence par 1, puis 2, puis 3, et ainsi de suite jusqu'à 10. Chaque nombre suit le précédent.\n\n1 - un\n2 - deux\n3 - trois\n4 - quatre\n5 - cinq\n6 - six\n7 - sept\n8 - huit\n9 - neuf\n10 - dix\n\n💡 Astuce : utilise tes doigts pour t'aider !"},
+      {t:"➕ Les additions simples",content:"Additionner, c'est mettre ensemble. Quand tu as 2 pommes et que je te donne 1 pomme, tu as maintenant 3 pommes.\n\n2 + 1 = 3\n\nEntraîne-toi avec des objets autour de toi : crayons, billes, jouets."},
+      {t:"🔵 Les formes",content:"Il existe plusieurs formes :\n\n● Le rond (cercle) : comme la lune ou une roue\n■ Le carré : 4 côtés tous pareils, comme un dé\n▬ Le rectangle : 4 côtés, plus long que large, comme une porte\n▲ Le triangle : 3 côtés, comme un toit\n\nRegarde autour de toi et trouve ces formes !"},
+    ],
+    fr: [
+      {t:"🔤 L'alphabet",content:"L'alphabet a 26 lettres. Il commence par A et finit par Z.\n\nA B C D E F G H I J K L M\nN O P Q R S T U V W X Y Z\n\nIl y a deux types de lettres : les VOYELLES (A, E, I, O, U, Y) et les CONSONNES (toutes les autres)."},
+      {t:"🎵 Les syllabes",content:"Une syllabe, c'est un morceau de mot qu'on prononce d'un coup.\n\nCHAT = 1 syllabe\nLA-PIN = 2 syllabes\nBA-NA-NE = 3 syllabes\n\nTape dans tes mains à chaque syllabe pour les compter !"},
+      {t:"🖼️ Reconnaître des mots",content:"Pour reconnaître un mot, on regarde la première lettre puis on essaie de le 'lire' avec l'image.\n\nCHAT 🐱\nPOMME 🍎\nLUNE 🌙\n\nLis avec ton doigt sous chaque lettre."},
+    ],
+    ev: [
+      {t:"🐾 Les animaux",content:"Les animaux peuvent vivre :\n\n🏡 À la ferme : la vache, le mouton, le cochon, la poule\n🌳 Dans la forêt : le renard, l'écureuil, le sanglier\n🌊 Dans la mer : le poisson, la baleine, le requin\n🏠 À la maison : le chat, le chien, le hamster\n\nChaque animal a son cri : le chat fait MIAOU, le chien fait OUAF."},
+      {t:"🎨 Les couleurs",content:"Les couleurs principales :\n\n🔴 Rouge - comme une tomate\n🟡 Jaune - comme le soleil\n🔵 Bleu - comme le ciel\n🟢 Vert - comme l'herbe\n⚫ Noir - comme la nuit\n⚪ Blanc - comme la neige\n\nEn mélangeant : bleu + jaune = vert, rouge + jaune = orange."},
+      {t:"🌳 La nature et les saisons",content:"Il y a 4 saisons :\n\n🌸 PRINTEMPS : les fleurs poussent\n☀️ ÉTÉ : il fait chaud\n🍂 AUTOMNE : les feuilles tombent\n❄️ HIVER : il fait froid, parfois il neige\n\nLes saisons se suivent toujours dans cet ordre."},
+    ],
+    en: [
+      {t:"🎨 The colors (les couleurs)",content:"En anglais, voici les couleurs principales :\n\nRED = rouge (se dit 'rèd')\nBLUE = bleu (se dit 'blou')\nYELLOW = jaune (se dit 'yèlo')\nGREEN = vert (se dit 'grine')\nBLACK = noir (se dit 'blaque')\nWHITE = blanc (se dit 'ouaïte')\nPINK = rose\nORANGE = orange\n\nEssaie de les dire à voix haute !"},
+      {t:"🔢 The numbers (les nombres)",content:"Compter en anglais de 1 à 10 :\n\nONE = 1\nTWO = 2\nTHREE = 3\nFOUR = 4\nFIVE = 5\nSIX = 6\nSEVEN = 7\nEIGHT = 8\nNINE = 9\nTEN = 10\n\nEntraîne-toi à compter sur tes doigts en anglais."},
+      {t:"🐾 The animals (les animaux)",content:"Les animaux en anglais :\n\nCAT = chat 🐱\nDOG = chien 🐶\nBIRD = oiseau 🐦\nFISH = poisson 🐟\nRABBIT = lapin 🐰\nHORSE = cheval 🐴\nCOW = vache 🐄\nPIG = cochon 🐷"},
+    ],
+  },
+  cp: {
+    ma: [
+      {t:"🔢 Les nombres jusqu'à 100",content:"Au CP, on apprend à compter jusqu'à 100.\n\nDe 1 à 10 : un, deux, trois...\nDe 11 à 20 : onze, douze... jusqu'à vingt\nLes dizaines : 10, 20, 30, 40, 50, 60, 70 (soixante), 80 (quatre-vingts), 90, 100\n\n💡 25 = 2 dizaines + 5 unités = vingt-cinq."},
+      {t:"➕ Addition et soustraction",content:"ADDITION (+) : ajouter\n5 + 3 = 8\nOn met ensemble.\n\nSOUSTRACTION (−) : enlever\n8 − 3 = 5\nOn enlève.\n\n💡 L'addition et la soustraction sont 'inverses' : si 5+3=8, alors 8-3=5."},
+      {t:"📐 Les formes et mesures",content:"Les formes plates :\n● Cercle, ■ Carré, ▬ Rectangle, ▲ Triangle\n\nLes mesures :\n📏 Longueur : on utilise le mètre (m) et le centimètre (cm)\n⚖️ Poids : on utilise le kilo (kg) et le gramme (g)\n🕐 Temps : la minute (60 secondes) et l'heure (60 minutes)\n\n1 m = 100 cm"},
+    ],
+    fr: [
+      {t:"🔤 Les sons et lettres",content:"Au CP, on apprend à associer LES LETTRES et LES SONS.\n\nA fait le son [a] : ARBRE\nI fait le son [i] : LIT\nU fait le son [u] : LUNE\nE fait le son [e] : ÉCOLE\nO fait le son [o] : MOTO\n\nDeux lettres peuvent faire un seul son :\nCH = [ch] (chat)\nOU = [ou] (loup)\nON = [on] (maison)"},
+      {t:"📖 Lire des mots et phrases",content:"Pour lire un mot, on assemble les sons :\nC-H-A-T → CHAT\nM-A-I-S-O-N → MAI-SON\n\nUne phrase commence par une MAJUSCULE et finit par un POINT.\n\nExemple : Le chat dort.\n\n💡 Pour comprendre une phrase, on lit doucement et on regarde l'image."},
+      {t:"📝 Grammaire de base",content:"Dans une phrase :\n\n🎭 Le NOM : désigne une personne, un animal, une chose (chat, maison, papa)\n⚡ Le VERBE : c'est l'action (manger, courir, dormir)\n👁️ L'ARTICLE : devant le nom (le, la, les, un, une, des)\n\nExemple : LE CHAT DORT.\nArticle = LE, Nom = CHAT, Verbe = DORT."},
+    ],
+    ev: [
+      {t:"🐾 Animaux et nature",content:"Les animaux sont des êtres vivants :\n\n🦁 Mammifères : ont du poil, ils naissent du ventre de leur mère (chat, chien, vache)\n🐦 Oiseaux : ont des plumes et pondent des œufs\n🐟 Poissons : vivent dans l'eau\n🐍 Reptiles : ont des écailles (serpent, lézard)\n🐸 Amphibiens : vivent dans l'eau et sur la terre (grenouille)"},
+      {t:"📅 Saisons et temps",content:"Une journée a 24 heures.\nUne semaine a 7 jours : lundi, mardi, mercredi, jeudi, vendredi, samedi, dimanche.\nUn mois a 28, 30 ou 31 jours.\nUne année a 12 mois et 4 saisons.\n\n☀️ Le soleil se lève à l'EST le matin et se couche à l'OUEST le soir."},
+      {t:"👤 Le corps humain",content:"Le corps a plusieurs parties :\n\n👁️ La tête : yeux (voir), oreilles (entendre), nez (sentir), bouche (parler, manger)\n🫁 Les organes : cœur (pompe le sang), poumons (respirer), estomac (digérer)\n💪 Le squelette : 206 os qui nous soutiennent\n🖐️ 5 sens : vue, ouïe, odorat, goût, toucher"},
+    ],
+    en: [
+      {t:"👋 Greetings (salutations)",content:"Pour saluer en anglais :\n\nHELLO = bonjour\nHI = salut\nGOOD MORNING = bonjour (matin)\nGOOD EVENING = bonsoir\nGOOD NIGHT = bonne nuit\nGOODBYE = au revoir\nBYE = salut (au revoir)\n\nPolitesse :\nPLEASE = s'il te plaît\nTHANK YOU = merci\nSORRY = pardon / désolé\nYES = oui / NO = non"},
+      {t:"👨‍👩‍👧 Family (la famille)",content:"La famille en anglais :\n\nFATHER (DAD) = papa\nMOTHER (MUM) = maman\nBROTHER = frère\nSISTER = sœur\nGRANDFATHER = grand-père\nGRANDMOTHER = grand-mère\nUNCLE = oncle\nAUNT = tante\nCOUSIN = cousin/cousine\nBABY = bébé"},
+      {t:"🏫 School (l'école)",content:"À l'école :\n\nSCHOOL = école\nCLASSROOM = salle de classe\nTEACHER = maître/maîtresse\nSTUDENT = élève\nBOOK = livre\nPENCIL = crayon\nPEN = stylo\nBAG = sac\nDESK = bureau\nCHAIR = chaise\nBOARD = tableau"},
+    ],
+  },
+  cm1: {
+    ma: [
+      {t:"➗ Les 4 opérations",content:"ADDITION (+) : on met ensemble\n234 + 156 = 390\n\nSOUSTRACTION (−) : on enlève\n400 − 125 = 275\n\nMULTIPLICATION (×) : addition répétée\n7 × 4 = 28 (= 7+7+7+7)\n\nDIVISION (÷) : partager en parts égales\n20 ÷ 4 = 5\n\n💡 Apprends bien tes tables de multiplication, c'est la base de tout !"},
+      {t:"🍕 Les fractions",content:"Une fraction représente une PARTIE d'un tout.\n\n1/2 = la moitié (un demi)\n1/3 = un tiers\n1/4 = un quart\n3/4 = trois quarts\n\nDans 3/4 :\n- 3 est le NUMÉRATEUR (en haut)\n- 4 est le DÉNOMINATEUR (en bas)\n\n💡 1/2 + 1/2 = 1 entier (une pizza entière)."},
+      {t:"📐 Géométrie",content:"FIGURES PLANES :\n🔺 Triangle : 3 côtés, 3 sommets\n🟦 Carré : 4 côtés égaux, 4 angles droits\n▭ Rectangle : 4 côtés (2 longs, 2 courts), 4 angles droits\n⚪ Cercle : tracé avec un compas\n\nFIGURES VOLUMIQUES (3D) :\n📦 Cube : 6 faces carrées\n⚽ Sphère : comme un ballon\n🥫 Cylindre : comme une boîte de conserve\n\nPérimètre = somme des côtés.\nAire = longueur × largeur (pour rectangle)."},
+      {t:"📏 Mesures",content:"LONGUEUR :\n1 m = 100 cm\n1 km = 1000 m\n1 cm = 10 mm\n\nMASSE :\n1 kg = 1000 g\n1 tonne = 1000 kg\n\nVOLUME :\n1 L = 100 cL = 1000 mL\n\nTEMPS :\n1 h = 60 min\n1 min = 60 s\n1 jour = 24 h"},
+      {t:"🧩 Résoudre un problème",content:"Pour résoudre un problème :\n\n1️⃣ LIRE attentivement l'énoncé\n2️⃣ COMPRENDRE ce qu'on cherche\n3️⃣ TROUVER l'opération à faire (+, −, ×, ÷)\n4️⃣ CALCULER\n5️⃣ VÉRIFIER que la réponse a un sens\n\nExemple : 5 boîtes de 8 stylos = combien de stylos ?\n→ Multiplication : 5 × 8 = 40 stylos."},
+    ],
+    frcm: [
+      {t:"📝 Grammaire",content:"Les NATURES des mots :\n• Nom (table, chat)\n• Verbe (manger, courir)\n• Adjectif (grand, beau)\n• Article (le, la, les)\n• Pronom (je, tu, il, elle)\n• Adverbe (vite, lentement)\n\nLes FONCTIONS :\n• Sujet : qui fait l'action\n• Verbe : l'action\n• COD : qui ou quoi (après verbe)\n• COI : à qui, à quoi (avec préposition)\n• CC : complément circonstanciel (temps, lieu, manière)"},
+      {t:"🔄 Conjugaison",content:"Les TEMPS principaux :\n\nPRÉSENT : ce qui se passe maintenant\nJe chante, tu chantes, il chante...\n\nIMPARFAIT : action passée qui dure\nJe chantais, tu chantais...\n\nPASSÉ COMPOSÉ : action passée terminée\nJ'ai chanté, tu as chanté...\n\nFUTUR : ce qui se passera\nJe chanterai, tu chanteras...\n\n💡 Avec ÊTRE ou AVOIR + participe passé = passé composé."},
+      {t:"✍️ Orthographe",content:"Règles importantes :\n\n• Pluriel : on ajoute -S (chat → chats)\n• Sauf : -EAU, -EU, -OU → -X (oiseau → oiseaux, jeu → jeux)\n• Sauf : -AL → -AUX (cheval → chevaux)\n\nHomophones :\n• A (verbe avoir) / À (préposition)\n• ET (liaison) / EST (verbe être)\n• ON (pronom) / ONT (verbe avoir)\n• SON (à lui) / SONT (verbe être)"},
+      {t:"📚 Vocabulaire",content:"Familles de mots : mots qui ont la même origine.\nExemple : TERRE → terrestre, atterrir, enterrer\n\nSYNONYMES : mots de sens proche\nBeau ≈ joli, splendide\n\nANTONYMES (contraires) :\ngrand ↔ petit, chaud ↔ froid\n\nPRÉFIXES : devant le mot\nIN- (in-visible = pas visible)\nRE- (re-faire = faire encore)\n\nSUFFIXES : à la fin\n-EUR (chant-eur = celui qui chante)"},
+    ],
+    hi: [
+      {t:"🦣 La Préhistoire",content:"La Préhistoire commence il y a 3 millions d'années (apparition des premiers hommes) et se termine vers -3300 av. J.-C. avec l'invention de l'écriture.\n\nDeux périodes :\n🪨 PALÉOLITHIQUE (pierre taillée) : les hommes sont nomades, chassent, font du feu (il y a -500 000 ans).\n🌾 NÉOLITHIQUE (pierre polie) : les hommes deviennent sédentaires, inventent l'agriculture et l'élevage (-10 000 ans).\n\n🎨 Grotte de Lascaux (France) : peintures rupestres vieilles de 17 000 ans."},
+      {t:"🏛️ L'Antiquité",content:"L'Antiquité va de -3300 av. J.-C. à 476 (chute de Rome).\n\n🏺 ÉGYPTE : les pharaons, les pyramides, les hiéroglyphes, le fleuve Nil.\n🏛️ GRÈCE : démocratie, mythologie (Zeus...), les Jeux Olympiques, Parthénon d'Athènes.\n🛡️ ROME : empire immense, Jules César, le Colisée, langue latine.\n\n🛡️ EN FRANCE : nos ancêtres étaient les Gaulois. Vercingétorix a été battu par Jules César à Alésia (-52 av. J.-C.)."},
+      {t:"🏰 Le Moyen Âge",content:"Le Moyen Âge va de 476 à 1453 (chute de Constantinople).\n\n👑 Charlemagne couronné empereur en 800.\n⚔️ Système FÉODAL : seigneurs (vivent au château) et paysans (serfs travaillent la terre).\n⛪ La religion catholique est très importante : grandes cathédrales (Notre-Dame).\n🛡️ Les Chevaliers, les croisades vers la Terre Sainte.\n👧 Jeanne d'Arc bat les Anglais à Orléans (1429).\n🦠 Peste Noire (XIVe siècle) tue des millions de personnes."},
+      {t:"⛵ Les Grandes Découvertes",content:"De la fin du XVe au début du XVIe siècle, les Européens partent explorer le monde.\n\n⛵ 1492 : Christophe COLOMB découvre l'Amérique.\n🌍 1519-1522 : MAGELLAN fait le premier tour du monde.\n🇮🇳 Vasco de Gama atteint les Indes par la mer.\n\n📚 RENAISSANCE : grand renouveau des arts et sciences. Léonard de Vinci peint la Joconde.\n📖 Vers 1450, GUTENBERG invente l'imprimerie : les livres se diffusent."},
+    ],
+    ge: [
+      {t:"🇫🇷 La France",content:"La France a une superficie d'environ 550 000 km². Elle compte ~68 millions d'habitants.\n\n📍 CAPITALE : Paris.\n🏛️ Découpage : 13 régions métropolitaines + 5 DOM (Guadeloupe, Martinique, Guyane, Réunion, Mayotte).\n96 départements en métropole.\n\n🏔️ RELIEF : Alpes (Mont Blanc 4810 m, le plus haut), Pyrénées, Massif Central, Vosges, Jura.\n🌊 4 façades maritimes : Manche, Atlantique, Méditerranée, mer du Nord.\n💧 Fleuves principaux : Loire (le plus long), Seine, Rhône, Garonne."},
+      {t:"🇪🇺 L'Europe",content:"L'Europe est un continent qui compte ~50 pays. L'Union Européenne (UE) en réunit 27.\n\n🌍 Quelques capitales :\n• Allemagne : Berlin\n• Espagne : Madrid\n• Italie : Rome\n• Royaume-Uni : Londres\n• Belgique : Bruxelles\n• Portugal : Lisbonne\n\n💶 Monnaie commune (sauf certains pays) : l'EURO.\n🏔️ Plus haut sommet : le Mont Blanc (en France et Italie)."},
+      {t:"🌍 Le Monde",content:"La Terre est composée de :\n• 7 CONTINENTS : Asie, Afrique, Europe, Amérique du Nord, Amérique du Sud, Océanie, Antarctique.\n• 5 OCÉANS : Pacifique (le plus grand), Atlantique, Indien, Arctique, Austral.\n\n🌐 Plus grand pays : Russie.\n👥 Plus peuplé : Inde (~1,4 milliard d'habitants).\n🏔️ Plus haute montagne : Everest (8849 m, Himalaya).\n🏜️ Plus grand désert chaud : Sahara (Afrique).\n🌊 Plus long fleuve : Nil (Afrique)."},
+      {t:"⛰️ Relief et paysages",content:"Le relief, ce sont les formes du sol :\n\n⛰️ MONTAGNE : très haute, en pente\n🏞️ COLLINE : moins haute qu'une montagne\n🌾 PLAINE : plate et étendue\n🏔️ PLATEAU : plat mais en altitude\n🏞️ VALLÉE : entre deux montagnes, souvent une rivière\n🌊 CÔTE : bord de mer\n🏖️ FALAISE : paroi rocheuse au bord de l'eau\n\n💧 SOURCE : où naît un fleuve / EMBOUCHURE : où il se jette dans la mer."},
+    ],
+    en: [
+      {t:"📖 Le vocabulaire de base",content:"Au CM1, on enrichit son vocabulaire :\n\n🏠 La maison : HOUSE (maison), KITCHEN (cuisine), BEDROOM (chambre), BATHROOM (salle de bain), DOOR (porte), WINDOW (fenêtre).\n\n🍽️ Les repas : BREAKFAST (petit-déj), LUNCH (déjeuner), DINNER (dîner).\n\n📅 Les jours : MONDAY (lundi), TUESDAY, WEDNESDAY (mercredi), THURSDAY, FRIDAY, SATURDAY (samedi), SUNDAY (dimanche).\n\n☀️ Les saisons : SPRING (printemps), SUMMER (été), AUTUMN (automne), WINTER (hiver)."},
+      {t:"🔄 Les verbes essentiels",content:"Verbes incontournables :\n\nTO BE = être\n• I am, you are, he/she/it is\n• we are, you are, they are\n\nTO HAVE = avoir\n• I have, you have, he/she/it has\n• we have, you have, they have\n\nAutres :\nTO GO = aller, TO DO = faire\nTO EAT = manger, TO DRINK = boire\nTO READ = lire, TO WRITE = écrire\nTO SPEAK = parler, TO LISTEN = écouter\nTO LIKE = aimer, TO LOVE = adorer\nTO SEE = voir, TO HEAR = entendre"},
+      {t:"💬 Phrases du quotidien",content:"Phrases utiles :\n\n👋 What is your name? = Comment t'appelles-tu ?\n→ My name is... = Je m'appelle...\n\n👶 How old are you? = Quel âge as-tu ?\n→ I am ... years old = J'ai ... ans.\n\n🌍 Where are you from? = D'où viens-tu ?\n→ I am from France = Je viens de France.\n\n😊 How are you? = Comment vas-tu ?\n→ I am fine, thank you! = Je vais bien, merci !\n\n🕐 What time is it? = Quelle heure est-il ?"},
+    ],
+  },
+  cm2: {
+    ma: [
+      {t:"🔢 Calcul avancé",content:"Au CM2, on maîtrise les 4 opérations avec de grands nombres.\n\n💡 MULTIPLICATION POSÉE :\nPour multiplier 246 × 13, on décompose :\n246 × 3 = 738\n246 × 10 = 2460\nTotal : 738 + 2460 = 3198\n\n💡 DIVISION POSÉE :\nPour diviser 432 ÷ 8, on cherche combien de fois 8 entre dans chaque chiffre.\n432 ÷ 8 = 54\n\n💡 PRIORITÉS : on calcule d'abord les parenthèses, puis × et ÷, puis + et −."},
+      {t:"🍕 Fractions et décimaux",content:"FRACTIONS ÉQUIVALENTES :\n1/2 = 2/4 = 4/8 = 50/100\n\n💡 Pour comparer : ramener au même dénominateur.\n\nNOMBRES DÉCIMAUX :\nUn décimal a une virgule.\n3,75 = 3 + 7 dixièmes + 5 centièmes\n\nCorrespondance fraction ↔ décimal :\n1/2 = 0,5\n1/4 = 0,25\n3/4 = 0,75\n1/10 = 0,1\n1/100 = 0,01\n\nPour ADDITIONNER les décimaux : aligner les virgules."},
+      {t:"📐 Géométrie avancée",content:"ANGLES :\n• Angle droit = 90°\n• Angle aigu < 90°\n• Angle obtus > 90°\n• Angle plat = 180°\n• Tour complet = 360°\n\nFIGURES PARTICULIÈRES :\n• Losange : 4 côtés égaux\n• Parallélogramme : côtés parallèles 2 à 2\n• Trapèze : 2 côtés parallèles\n\nFORMULES :\n• Aire carré = côté × côté\n• Aire rectangle = L × l\n• Aire triangle = (b × h) ÷ 2\n• Volume cube = côté × côté × côté\n• Volume pavé = L × l × h"},
+      {t:"📏 Mesures",content:"Conversions essentielles :\n\nLONGUEUR : km > m > dm > cm > mm\n×10 entre chaque unité\n\nMASSE : t > kg > g > mg\n×1000 entre certaines\n\nCAPACITÉ : kL > L > dL > cL > mL\n\nAIRES : km² > m² > dm² > cm² > mm²\n×100 entre chaque\n\nDURÉES :\n1h = 60 min, 1 min = 60 s\n2h30 = 150 min\n\nVITESSE = distance ÷ temps\nEx : 120 km en 2h = 60 km/h"},
+      {t:"🧩 Problèmes complexes",content:"PROBLÈMES À PLUSIEURS ÉTAPES :\n\nExemple : Paul achète 3 livres à 8€ et 2 cahiers à 3€. Il paie avec 50€. Combien lui rend-on ?\n\n1️⃣ Calculer le prix des livres : 3 × 8 = 24€\n2️⃣ Calculer le prix des cahiers : 2 × 3 = 6€\n3️⃣ Calculer le total : 24 + 6 = 30€\n4️⃣ Calculer la monnaie : 50 − 30 = 20€\n\n💡 Toujours faire un schéma si nécessaire.\n💡 Vérifier l'unité de la réponse (€, km, kg...)."},
+    ],
+    frcm: [
+      {t:"📝 Grammaire avancée",content:"NATURES (rappel) : nom, verbe, adj, art, pronom, adverbe, préposition, conjonction.\n\nFONCTIONS importantes :\n• Sujet : qui fait\n• COD : qui ? quoi ? sans préposition (Je mange UNE POMME)\n• COI : à qui ? à quoi ? avec préposition (Je parle À PAUL)\n• Attribut du sujet : après être/sembler (Il est BEAU)\n• CC : temps, lieu, manière\n\nPROPOSITIONS :\n• Indépendante : sens complet\n• Subordonnée : dépend d'une autre\nEx : Je sais [qu'il viendra] (subord. complétive)"},
+      {t:"🔄 Conjugaison complète",content:"Les TEMPS de l'indicatif :\n• Présent\n• Imparfait (terminaisons en -ais, -ait, -ions, -aient)\n• Passé composé (auxiliaire + PP)\n• Plus-que-parfait (j'avais chanté)\n• Passé simple (il chanta)\n• Futur simple (je chanterai)\n• Futur antérieur (j'aurai chanté)\n\nAutres MODES :\n• Impératif (Mange !)\n• Conditionnel (je mangerais)\n• Subjonctif (que je mange)\n• Participe (mangeant, mangé)\n• Infinitif (manger)\n• Gérondif (en mangeant)"},
+      {t:"✍️ Orthographe avancée",content:"ACCORD DU PARTICIPE PASSÉ :\n• Avec ÊTRE : accord avec le sujet\n(Elle est partiE, ils sont partiS)\n• Avec AVOIR : accord avec COD si placé AVANT\n(Les pommes que j'ai mangéES)\n• Sans COD ou COD après : invariable\n(J'ai mangé les pommes)\n\nMOTS À NE PAS CONFONDRE :\n• QUEL/QUELLE/QU'ELLE\n• LEUR (poss.) / LEURS (au pluriel)\n• CES (démonstratif) / SES (possessif)\n• OU (choix) / OÙ (lieu)"},
+      {t:"📚 Vocabulaire enrichi",content:"NIVEAUX DE LANGUE :\n• Soutenu : se restaurer (manger)\n• Courant : manger\n• Familier : bouffer\n\nSENS PROPRE / FIGURÉ :\n• Propre : il pleut des gouttes\n• Figuré : il pleut des cordes (beaucoup)\n\nCHAMPS LEXICAUX : ensemble de mots liés au même thème (école : élève, maître, cahier...)\n\nPOLYSÉMIE : un mot peut avoir plusieurs sens (la TABLE des matières, la TABLE de la cuisine).\n\nETYMOLOGIE : origine du mot (du latin, grec...)."},
+    ],
+    hi: [
+      {t:"🏰 Les Temps modernes (XVe-XVIIIe)",content:"Cette période commence vers 1492 (découverte de l'Amérique) et finit en 1789 (Révolution).\n\n👑 LA MONARCHIE ABSOLUE : le roi a tous les pouvoirs.\n☀️ LOUIS XIV (1638-1715), le \"Roi-Soleil\", règne 72 ans. Il fait construire le château de Versailles.\n\n📖 La RENAISSANCE (XVIe) : renouveau des arts et sciences. Léonard de Vinci, François Ier.\n⛪ Les GUERRES DE RELIGION entre catholiques et protestants. L'Édit de Nantes (1598) accorde la tolérance, puis Louis XIV le révoque en 1685.\n\n🛳️ La TRAITE DES ESCLAVES atlantique : esclavage tragique en Amériques."},
+      {t:"🇫🇷 La Révolution française",content:"La Révolution commence en 1789.\n\n📅 14 JUILLET 1789 : Prise de la Bastille. Le peuple se révolte contre la misère et les inégalités.\n📜 26 AOÛT 1789 : Déclaration des Droits de l'Homme et du Citoyen.\n\n⚔️ Le roi LOUIS XVI et la reine Marie-Antoinette sont guillotinés en 1793.\n🔥 La TERREUR (1793-1794) sous Robespierre : beaucoup d'exécutions.\n\n🇫🇷 Symboles républicains :\n• Devise : Liberté, Égalité, Fraternité\n• Drapeau : Bleu, Blanc, Rouge\n• Marianne, La Marseillaise\n\n👑 NAPOLÉON Bonaparte devient empereur en 1804 et bâtit un grand empire. Vaincu à Waterloo en 1815."},
+      {t:"🚂 Le XIXe siècle",content:"Après Napoléon, retour de la monarchie, puis la République s'installe progressivement.\n\n🏭 RÉVOLUTION INDUSTRIELLE :\n• Inventions : la machine à vapeur, le train, l'électricité\n• Les villes grandissent (exode rural)\n• Apparition de la classe ouvrière\n\n📅 1870 : début de la IIIe République.\n📅 1882-1886 : Jules FERRY rend l'école GRATUITE, LAÏQUE et OBLIGATOIRE.\n📅 1905 : Séparation des Églises et de l'État (laïcité).\n\n🌍 La France construit un grand EMPIRE COLONIAL en Afrique et en Asie."},
+      {t:"⚔️ Le XXe siècle",content:"📅 1914-1918 : PREMIÈRE GUERRE MONDIALE. La Grande Guerre fait 18 millions de morts. Armistice le 11 novembre 1918.\n\n📅 1939-1945 : SECONDE GUERRE MONDIALE. La France est occupée par l'Allemagne nazie.\n📻 18 JUIN 1940 : Appel du général de GAULLE à la résistance.\n📅 6 JUIN 1944 : Débarquement en Normandie.\n📅 8 MAI 1945 : Victoire alliée en Europe.\n\n👩 1944 : Les femmes obtiennent le droit de vote en France.\n📅 1957 : Traité de Rome (création de la CEE, ancêtre de l'UE).\n📅 1958 : Ve République (Constitution de De Gaulle).\n📅 1989 : Chute du mur de Berlin.\n💶 2002 : L'euro entre en circulation."},
+    ],
+    ge: [
+      {t:"🇫🇷 La France et ses régions",content:"La France compte :\n• 13 régions métropolitaines (Île-de-France, PACA, Auvergne-Rhône-Alpes, etc.)\n• 5 départements/régions d'outre-mer : Guadeloupe, Martinique, Guyane, Réunion, Mayotte\n• Plusieurs Collectivités d'outre-mer (Polynésie, Nouvelle-Calédonie...)\n\n🏙️ GRANDES VILLES : Paris (capitale), Marseille, Lyon, Toulouse, Nice, Nantes, Strasbourg, Bordeaux.\n\n⚙️ Économie : 5e puissance économique mondiale (PIB).\n🌾 AGRICULTURE forte (1er producteur de blé en UE).\n✈️ INDUSTRIE de pointe (Airbus, automobile, luxe)."},
+      {t:"🇪🇺 L'Europe et l'UE",content:"L'EUROPE : continent de ~750 millions d'habitants.\n\n🏛️ UNION EUROPÉENNE : 27 pays membres (depuis le Brexit en 2020).\nFondée en 1957 (Traité de Rome).\n\n📍 INSTITUTIONS :\n• Parlement européen (Strasbourg/Bruxelles)\n• Commission européenne (Bruxelles)\n• Cour de justice (Luxembourg)\n\n💶 EURO : monnaie commune (depuis 2002), pas dans tous les pays.\n🗺️ ESPACE SCHENGEN : libre circulation des personnes.\n\n🌍 Grandes puissances européennes : Allemagne (1re éco), France, Royaume-Uni (hors UE), Italie."},
+      {t:"🌍 Le Monde",content:"7 CONTINENTS, 5 OCÉANS, ~200 pays.\n\n👥 Population mondiale : ~8 milliards (2025).\n\n📊 GRANDES PUISSANCES :\n• États-Unis : 1re puissance économique et militaire\n• Chine : 2e puissance, en forte croissance\n• Russie : plus grand pays au monde\n• Inde : pays le plus peuplé\n• BRICS : Brésil, Russie, Inde, Chine, Afrique du Sud (puissances émergentes)\n\n🌐 MONDIALISATION : échanges commerciaux et culturels entre tous les pays. Cela crée de la richesse mais aussi des inégalités.\n\n🌎 PAYS RICHES (Nord) vs PAYS PAUVRES (Sud) : différences importantes (santé, éducation, alimentation)."},
+      {t:"♻️ Développement et environnement",content:"DÉVELOPPEMENT DURABLE : satisfaire les besoins actuels sans compromettre l'avenir.\n\n🌍 PROBLÈMES ENVIRONNEMENTAUX :\n• Réchauffement climatique (CO2, effet de serre)\n• Pollution de l'air, de l'eau, des sols\n• Déforestation\n• Disparition d'espèces animales\n• Épuisement des ressources (pétrole, eau...)\n\n⚡ ÉNERGIES :\n• Polluantes : pétrole, gaz, charbon (fossiles)\n• Renouvelables : solaire, éolien, hydraulique, géothermique\n\n♻️ SOLUTIONS : tri sélectif, recyclage, transports en commun, économies d'énergie.\n\n📜 Accord de PARIS sur le climat (2015) : pays s'engagent à réduire les émissions de CO2."},
+    ],
+    en: [
+      {t:"📖 Vocabulaire enrichi",content:"Vocabulaire CM2 :\n\n🌍 Le monde : CITY (ville), COUNTRY (pays), CAPITAL (capitale), WORLD (monde).\n\n👥 Personnes : FRIEND (ami), NEIGHBOUR (voisin), PEOPLE (gens), CHILDREN (enfants).\n\n💼 Activités : WORK (travailler/travail), STUDY (étudier), PLAY (jouer), TRAVEL (voyager).\n\n⏰ Moments : MORNING (matin), AFTERNOON (après-midi), EVENING (soir), NIGHT (nuit), WEEKEND, YESTERDAY (hier), TODAY (aujourd'hui), TOMORROW (demain).\n\n💡 Mots utiles : MAYBE (peut-être), ALWAYS (toujours), NEVER (jamais), OFTEN (souvent), SOMETIMES (parfois)."},
+      {t:"📝 Grammaire anglaise",content:"PLURIEL : généralement +S (cats), mais :\n• -X, -CH, -SH, -S → +ES (boxes, dishes)\n• -Y → -IES (baby → babies)\n• Irréguliers : CHILD→CHILDREN, FOOT→FEET, MAN→MEN\n\nCOMPARATIFS :\n• Adjectif court + ER : tall→taller\n• Adjectif long : MORE + adjectif : more beautiful\n• Irréguliers : good→better, bad→worse\n\nSUPERLATIFS :\n• THE + adjectif + EST : the tallest\n• THE MOST + adjectif : the most beautiful\n\nQUESTIONS :\n• Au présent : DO/DOES + sujet + verbe ?\n(Do you like ? Does she play ?)"},
+      {t:"🔄 Conjugaison anglaise",content:"PRÉSENT SIMPLE (habitudes) :\nI work, you work, HE/SHE/IT WORKS (+S à la 3e pers.)\n\nPRÉSENT CONTINU (en ce moment) :\nI am working, he is working\n\nPRÉTÉRIT (passé) :\n• Verbes réguliers : +ED (played, worked)\n• Verbes irréguliers : go→WENT, eat→ATE, see→SAW, take→TOOK, write→WROTE\n\nFUTUR :\n• WILL + verbe : I will go\n• GOING TO + verbe : I am going to go (futur proche)\n\nMODAUX :\n• CAN = pouvoir (capacité)\n• MUST = devoir (obligation)\n• SHOULD = devrait (conseil)\n• WOULD = conditionnel"},
+      {t:"💬 Phrases utiles",content:"Au quotidien :\n\n🛍️ AU MAGASIN :\n• How much is it? = Combien ça coûte ?\n• Can I have this? = Puis-je avoir ceci ?\n• I would like... = Je voudrais...\n\n🍔 AU RESTAURANT :\n• I'm hungry/thirsty = J'ai faim/soif\n• The bill, please = L'addition s'il vous plaît\n\n🚇 EN VOYAGE :\n• Where is...? = Où est... ?\n• How do I get to...? = Comment vais-je à... ?\n• I'm lost = Je suis perdu\n\n🤝 EXPRESSIONS COURANTES :\n• I don't understand = Je ne comprends pas\n• Can you repeat? = Peux-tu répéter ?\n• Speak slowly, please = Parle lentement s'il te plaît"},
+    ],
+  },
+};
+
+// ════════════════════════════════════════════════════════
+//  EXPLICATIONS DÉTAILLÉES (pour bouton "En savoir plus")
+// ════════════════════════════════════════════════════════
+// Clé : "level:subject:cat" ou "level:subject" → texte ou objet avec images
+const DETAILED = {
+  // Histoire CM1
+  "cm1:hi:prehistoire":{emoji:"🦣🏹🪨🔥",text:"La Préhistoire est l'âge le plus long de l'humanité (3 millions d'années !). Les hommes étaient d'abord nomades (chasseurs-cueilleurs) au Paléolithique, puis sont devenus sédentaires (agriculteurs) au Néolithique. La grotte de Lascaux contient des peintures animales très belles, vieilles de 17 000 ans. L'écriture (vers -3300 av JC) marque la fin de la Préhistoire."},
+  "cm1:hi:antiquite":{emoji:"🏛️⚔️🏺👑",text:"L'Antiquité commence avec l'écriture (-3300) et finit avec la chute de Rome (476). Trois grandes civilisations : Égypte (pyramides, Nil, pharaons), Grèce (démocratie, dieux, Olympiades), Rome (empire immense, Jules César, Colisée). En France : les Gaulois battus à Alésia (-52) par César."},
+  "cm1:hi:moyenage":{emoji:"🏰⚔️👑⛪",text:"Le Moyen Âge (476-1453) : système féodal (seigneurs, vassaux, paysans). Charlemagne (800), les croisades, les cathédrales gothiques (Notre-Dame), Jeanne d'Arc (1429), peste noire (XIVe siècle). L'imprimerie de Gutenberg (~1450) annonce la fin de cette période."},
+  "cm1:hi:decouvertes":{emoji:"⛵🌍🗺️🎨",text:"À la fin du XVe siècle, les Européens explorent le monde. Christophe Colomb découvre l'Amérique en 1492. Magellan fait le 1er tour du monde (1519-1522). C'est aussi la Renaissance (arts, sciences) : Léonard de Vinci peint la Joconde. L'imprimerie diffuse les livres."},
+  // Histoire CM2
+  "cm2:hi:tempsmodernes":{emoji:"☀️👑🏰📖",text:"Les Temps modernes (1492-1789) sont marqués par la monarchie absolue. Louis XIV (Roi-Soleil) règne 72 ans depuis le château de Versailles. C'est aussi la période des guerres de religion (Édit de Nantes 1598, révoqué en 1685), de la traite atlantique (esclavage), et de grands philosophes (Lumières)."},
+  "cm2:hi:revolution":{emoji:"🇫🇷⚔️📜👑",text:"La Révolution française (1789) renverse la monarchie. 14 juillet 1789 : prise de la Bastille. Déclaration des Droits de l'Homme (août 1789). Louis XVI guillotiné (1793). Terreur sous Robespierre. Devise : Liberté, Égalité, Fraternité. Napoléon devient empereur (1804), vaincu à Waterloo (1815)."},
+  "cm2:hi:xixe":{emoji:"🚂🏭💡📚",text:"Le XIXe siècle : révolution industrielle (machine à vapeur, train, électricité). En France : Restauration, Second Empire (Napoléon III), puis IIIe République (1870). Jules Ferry rend l'école gratuite, laïque et obligatoire (1882-86). Séparation Église/État (1905). Empire colonial français très étendu."},
+  "cm2:hi:xxe":{emoji:"⚔️🕊️💶🌍",text:"Le XXe siècle est marqué par 2 guerres mondiales (1914-18, 1939-45) très meurtrières. Appel du général de Gaulle (18 juin 1940), Débarquement (6 juin 1944). 1944 : droit de vote des femmes en France. 1957 : Traité de Rome (CEE). 1958 : Ve République. 1989 : chute du mur de Berlin. 2002 : Euro."},
+  // Géographie CM1
+  "cm1:ge:france":{emoji:"🇫🇷🗼🏔️🌊",text:"La France : ~550 000 km², ~68 millions d'habitants. Capitale Paris. 13 régions, 96 départements. Plus haut sommet : Mont Blanc (4810 m, Alpes). 4 façades maritimes : Manche, Atlantique, Méditerranée, mer du Nord. Fleuves : Loire (le plus long), Seine, Rhône, Garonne. 5 DOM outre-mer."},
+  "cm1:ge:europe":{emoji:"🇪🇺🏰🗺️💶",text:"L'Europe : continent de ~50 pays. L'Union Européenne en réunit 27 (depuis le Brexit). Monnaie commune : Euro (depuis 2002). Capitales : Berlin (Allemagne), Madrid (Espagne), Rome (Italie), Londres (UK), Bruxelles (Belgique). Plus haut sommet : Mont Blanc."},
+  "cm1:ge:monde":{emoji:"🌍🗺️🌊🏔️",text:"Le monde : 7 continents (Asie, Afrique, Amérique N/S, Europe, Océanie, Antarctique), 5 océans (Pacifique le + grand, Atlantique, Indien, Arctique, Austral). Plus grand pays : Russie. Plus peuplé : Inde. Plus haute montagne : Everest (8849 m). Plus long fleuve : Nil."},
+  "cm1:ge:relief":{emoji:"⛰️🏞️🌾🌊",text:"Le relief, ce sont les formes du sol : MONTAGNE (haute, pente), COLLINE, PLAINE (plate), PLATEAU (plat mais en altitude), VALLÉE (entre 2 montagnes, avec rivière). Au bord de la mer : CÔTE, FALAISE. Un fleuve naît à la SOURCE et se jette dans la mer à l'EMBOUCHURE."},
+  // Géographie CM2
+  "cm2:ge:france":{emoji:"🇫🇷🏙️⚙️🌾",text:"La France : 5e puissance économique mondiale. 13 régions métropolitaines + 5 DOM + COM. Grandes villes : Paris, Marseille, Lyon, Toulouse, Nice. Agriculture forte (1er producteur de blé en UE). Industrie de pointe : Airbus, automobile, luxe. Mont Blanc 4810 m."},
+  "cm2:ge:europe":{emoji:"🇪🇺🏛️💶🗺️",text:"L'Europe et l'UE : 27 pays membres (depuis Brexit 2020). Institutions : Parlement (Strasbourg), Commission (Bruxelles), Cour (Luxembourg). Monnaie commune Euro. Espace Schengen pour libre circulation. Allemagne 1re puissance économique d'Europe."},
+  "cm2:ge:monde":{emoji:"🌍🌐🏙️🌾",text:"Le monde : ~8 milliards d'habitants. Grandes puissances : USA (1er), Chine (2e), Russie (territoire), Inde (population). BRICS = Brésil, Russie, Inde, Chine, Afrique du Sud. Mondialisation : échanges entre pays mais inégalités Nord-Sud."},
+  "cm2:ge:developpement":{emoji:"♻️🌱⚡🌍",text:"Développement durable : satisfaire les besoins sans compromettre l'avenir. Problèmes : réchauffement climatique (CO2), pollution, déforestation, épuisement des ressources. Énergies renouvelables (solaire, éolien) à privilégier. Accord de Paris (2015) sur le climat."},
+  // Maths (explications par catégorie)
+  "ma:calcul":{emoji:"🧮➕✖️➗",text:"Quand le calcul est faux, il faut vérifier étape par étape :\n• Pose bien l'opération (chiffres alignés)\n• Pour les +/− : retenue ou emprunt si besoin\n• Pour les × : multiplie chaque chiffre, additionne les résultats partiels\n• Pour les ÷ : combien de fois le diviseur entre dans le nombre\n\nAstuce : essaie de faire le calcul inverse pour vérifier (si 7×6=42, alors 42÷7=6)."},
+  "ma:fractions":{emoji:"🍕🔢🍰📊",text:"Une fraction représente une PART d'un tout :\n• Numérateur (haut) : nombre de parts prises\n• Dénominateur (bas) : nombre total de parts\n\nPour ADDITIONNER avec même dénominateur : on additionne juste les numérateurs (1/4 + 2/4 = 3/4).\n\nPour COMPARER : convertir en décimal ou trouver un dénominateur commun.\n1/2 = 0,5 / 1/4 = 0,25 / 3/4 = 0,75"},
+  "ma:geometrie":{emoji:"📐🔺⬜⭕",text:"Géométrie : retiens les FORMULES clés :\n• Périmètre = somme des côtés\n• Périmètre carré = 4 × côté\n• Périmètre rectangle = 2 × (L+l)\n• Aire carré = côté × côté\n• Aire rectangle = L × l\n• Volume cube = côté³\n• Volume pavé = L × l × h\n\nAngles : droit = 90°, plat = 180°, complet = 360°."},
+  "ma:mesures":{emoji:"📏⚖️🕐💧",text:"Conversions essentielles :\n• 1 m = 100 cm = 1000 mm\n• 1 km = 1000 m\n• 1 kg = 1000 g\n• 1 L = 100 cL = 1000 mL\n• 1 h = 60 min\n• 1 min = 60 s\n\nAstuce : pour passer d'une unité à l'autre, multiplie ou divise par 10, 100 ou 1000 selon les paliers."},
+  "ma:problemes":{emoji:"🧩📝🤔💡",text:"Pour résoudre un problème :\n1. LIRE plusieurs fois l'énoncé\n2. Repérer les nombres et l'unité\n3. Identifier la question\n4. Choisir l'opération (+ pour ajouter, − pour enlever, × pour multiplier, ÷ pour partager)\n5. Calculer soigneusement\n6. Vérifier la cohérence (un objet ne peut pas coûter 1 million !)"},
+  // Anglais
+  "en:vocabulaire":{emoji:"📚🇬🇧🗣️✏️",text:"Le vocabulaire anglais s'apprend par répétition et association :\n• Répète les mots à voix haute en regardant l'image\n• Lis l'anglais comme une nouvelle façon de nommer les choses\n• Note les mots difficiles dans un carnet\n• Écoute des chansons en anglais\n\nN'oublie pas : la prononciation est souvent différente de l'écriture en anglais !"},
+  "en:greetings":{emoji:"👋😊🙏👋",text:"Les salutations sont la base de toute conversation :\n• HELLO/HI = bonjour/salut\n• GOOD MORNING (matin), GOOD AFTERNOON (après-midi), GOOD EVENING (soir)\n• GOODBYE/BYE = au revoir\n• Politesse : PLEASE (s'il te plaît), THANK YOU (merci), SORRY (pardon)\n• Question simple : HOW ARE YOU? = Comment vas-tu ?\n• Réponse : I'M FINE, THANK YOU = Je vais bien, merci !"},
+  "en:family":{emoji:"👨‍👩‍👧‍👦❤️👴👵",text:"La famille en anglais :\n• Parents : FATHER (DAD) = père, MOTHER (MUM) = mère\n• Enfants : SON = fils, DAUGHTER = fille\n• Frères et sœurs : BROTHER/SISTER\n• Grands-parents : GRANDFATHER/GRANDMOTHER\n• Oncle/tante : UNCLE/AUNT\n• Cousin : COUSIN (pareil qu'en français !)\n\nL'adjectif possessif : MY (mon/ma), YOUR (ton/ta), HIS/HER (son/sa)."},
+  "en:verbes":{emoji:"🏃‍♂️🍎📖💬",text:"Les verbes anglais essentiels :\n• TO BE = être (I am, you are, he is)\n• TO HAVE = avoir (I have, he has)\n• TO GO = aller, TO DO = faire\n• TO EAT = manger, TO DRINK = boire\n• TO SLEEP = dormir, TO RUN = courir\n• TO READ = lire, TO WRITE = écrire\n• TO SPEAK = parler, TO LISTEN = écouter\n• TO LIKE = aimer, TO LOVE = adorer\n\n💡 Le verbe à l'infinitif commence par TO."},
+  "en:grammaire":{emoji:"📝✏️🇬🇧📖",text:"Bases de grammaire anglaise :\n• Pluriel : généralement +S (cat→cats)\n• Sauf -X, -CH : +ES (box→boxes)\n• Irréguliers : child→children, foot→feet\n\n• A devant consonne (a book), AN devant voyelle (an apple)\n\n• Comparatif court : +ER (taller)\n• Comparatif long : MORE (more beautiful)\n• Superlatif : THE + ...EST ou THE MOST...\n\n• Présent à la 3e pers : +S (he works)\n• Question avec DO/DOES : Do you like?"},
+  "en:phrases":{emoji:"💬🗣️🤝🌍",text:"Phrases utiles :\n• WHAT IS YOUR NAME? = Comment t'appelles-tu ? → MY NAME IS... = Je m'appelle...\n• HOW OLD ARE YOU? = Quel âge ? → I AM ... YEARS OLD\n• HOW ARE YOU? → I'M FINE, THANK YOU\n• WHERE DO YOU LIVE? = Où habites-tu ?\n• HOW MUCH IS IT? = Combien ça coûte ?\n• I DON'T UNDERSTAND = Je ne comprends pas\n• CAN YOU REPEAT? = Peux-tu répéter ?"},
+};
+
+// Helper pour récupérer une explication détaillée
+function getDetailedExplain(level, subject, cat) {
+  const keys = [
+    `${level}:${subject}:${cat}`,
+    `${level}:${subject}`,
+    `${subject}:${cat}`,
+    `${subject}`,
+  ];
+  for (const k of keys) {
+    if (DETAILED[k]) return DETAILED[k];
+  }
+  return null;
+}
+
+// ════════════════════════════════════════════════════════
 //  CONFIG
 // ════════════════════════════════════════════════════════
 const LEVELS = {
@@ -1663,23 +2248,27 @@ const LEVELS = {
     ma:{label:'Maths',icon:'🔢',cats:{compter:'Compter',additions:'Additions'}},
     fr:{label:'Français',icon:'📖',cats:{lettres:'Lettres',syllabes:'Syllabes',mots:'Mots & images'}},
     ev:{label:'Éveil',icon:'🌿',cats:{animaux:'Animaux',couleurs:'Couleurs',nature:'Nature'}},
+    en:{label:'Anglais',icon:'🇬🇧',cats:{colors:'Colors (couleurs)',numbers:'Numbers (nombres)',animals:'Animals (animaux)'}},
   }},
   cp:{label:'CP',vocal:true,subjects:{
     ma:{label:'Maths',icon:'🔢',cats:{nombres:'Nombres',calcul:'Calcul'}},
     fr:{label:'Français',icon:'📖',cats:{phonologie:'Phonologie',lecture:'Lecture',grammaire:'Grammaire'}},
     ev:{label:'Éveil',icon:'🌿',cats:{animaux:'Animaux',saisons:'Saisons',corps:'Corps humain'}},
+    en:{label:'Anglais',icon:'🇬🇧',cats:{greetings:'Greetings (saluer)',family:'Family (famille)',school:'School (école)'}},
   }},
-  cm1:{label:'CM1',vocal:false,subjects:{
+  cm1:{label:'CM1',vocal:true,subjects:{
     ma:{label:'Maths',icon:'🔢',cats:{calcul:'Calcul',fractions:'Fractions',geometrie:'Géométrie',mesures:'Mesures',problemes:'Problèmes'}},
     frcm:{label:'Français',icon:'📖',cats:{grammaire:'Grammaire',conjugaison:'Conjugaison',orthographe:'Orthographe',vocabulaire:'Vocabulaire'}},
     hi:{label:'Histoire',icon:'🏰',cats:{prehistoire:'Préhistoire',antiquite:'Antiquité',moyenage:'Moyen Âge',decouvertes:'Grandes découvertes'}},
     ge:{label:'Géographie',icon:'🌍',cats:{france:'France',europe:'Europe',monde:'Monde',relief:'Relief'}},
+    en:{label:'Anglais',icon:'🇬🇧',cats:{vocabulaire:'Vocabulary',verbes:'Verbs (verbes)',phrases:'Phrases'}},
   }},
-  cm2:{label:'CM2',vocal:false,subjects:{
+  cm2:{label:'CM2',vocal:true,subjects:{
     ma:{label:'Maths',icon:'🔢',cats:{calcul:'Calcul',fractions:'Fractions & décimaux',geometrie:'Géométrie',mesures:'Mesures',problemes:'Problèmes'}},
     frcm:{label:'Français',icon:'📖',cats:{grammaire:'Grammaire',conjugaison:'Conjugaison',orthographe:'Orthographe',vocabulaire:'Vocabulaire'}},
     hi:{label:'Histoire',icon:'🏰',cats:{tempsmodernes:'Temps modernes',revolution:'Révolution',xixe:'XIXe siècle',xxe:'XXe siècle'}},
     ge:{label:'Géographie',icon:'🌍',cats:{france:'France',europe:'Europe',monde:'Monde',developpement:'Développement'}},
+    en:{label:'Anglais',icon:'🇬🇧',cats:{vocabulaire:'Vocabulary',grammaire:'Grammar',phrases:'Phrases'}},
   }},
 };
 const DIFFS = [
@@ -1693,8 +2282,11 @@ const LV_COLORS = {gs:'#e91e8c',cp:'#f59e0b',cm1:'#e07b39',cm2:'#3b82f6'};
 // ════════════════════════════════════════════════════════
 //  STATE
 // ════════════════════════════════════════════════════════
-let S = {view:'home',level:null,subject:null,cat:null,difficulty:'easy',questions:[],qIndex:0,answered:false,scoreOk:0,scoreKo:0};
+let S = {view:'home',mode:null,level:null,subject:null,cat:null,difficulty:'easy',questions:[],qIndex:0,answered:false,scoreOk:0,scoreKo:0,lessonIndex:0,showDetailed:false};
 function isVocal(){return S.level && LEVELS[S.level].vocal}
+// Pour les GS/CP : la voix se lance automatiquement (enfant ne lit pas)
+// Pour CM1/CM2 : voix activable manuellement (vocal=true permet de lire les anglais)
+function isAutoVocal(){return S.level === 'gs' || S.level === 'cp'}
 
 // ════════════════════════════════════════════════════════
 //  RÉCUPÉRATION DES QUESTIONS
@@ -1712,7 +2304,7 @@ function getQuestions(count = 8) {
     return q;
   };
 
-  // Si on a un générateur dynamique pour ce thème, on l'utilise
+  // Si on a un générateur dynamique pour ce thème, on l'utilise (maths)
   if (gen && typeof gen === 'function') {
     for (let i = 0; i < count; i++) {
       try { result.push(fixA(gen())); } catch(e) { console.error('gen error', e); }
@@ -1720,13 +2312,30 @@ function getQuestions(count = 8) {
     return result;
   }
 
+  // ANGLAIS : pioche dans ENGLISH bank
+  if (S.subject === 'en') {
+    const bank = ENGLISH[S.level]?.[S.cat]?.[S.difficulty];
+    if (bank && bank.length > 0) {
+      const pool = shuffle(bank);
+      if (pool.length >= count) return pool.slice(0, count);
+      const allBank = ENGLISH[S.level]?.[S.cat];
+      if (allBank) {
+        const allQs = [];
+        for (const d of ['easy','medium','hard','vhard']) {
+          if (allBank[d]) allQs.push(...allBank[d]);
+        }
+        return shuffle(allQs).slice(0, count);
+      }
+      return pool;
+    }
+    return [];
+  }
+
   // Sinon on pioche dans la banque statique
   const bank = BANK[S.level]?.[S.subject]?.[S.cat]?.[S.difficulty];
   if (bank && bank.length > 0) {
     const pool = shuffle(bank);
-    // Si pas assez de questions distinctes, on complète depuis les autres difficultés
     if (pool.length >= count) return pool.slice(0, count);
-    // Compléter avec d'autres difficultés
     const allBank = BANK[S.level]?.[S.subject]?.[S.cat];
     if (allBank) {
       const allQs = [];
@@ -1749,7 +2358,10 @@ function render() {
   document.getElementById('score-ko').textContent = S.scoreKo;
   const m = document.getElementById('main');
   if (S.view === 'home') return rHome(m);
+  if (S.view === 'mode') return rMode(m);
   if (S.view === 'subject') return rSubject(m);
+  if (S.view === 'lessons') return rLessons(m);
+  if (S.view === 'lessonView') return rLessonView(m);
   if (S.view === 'settings') return rSettings(m);
   if (S.view === 'result') return rResult(m);
   rQuiz(m);
@@ -1757,20 +2369,45 @@ function render() {
 
 function rHome(m) {
   m.innerHTML = `
-    <div class="home-hero"><h1>Mon École 🏫</h1><p>Des milliers d'exercices différents !</p></div>
+    <div class="home-hero"><h1>Mon École 🏫</h1><p>Leçons, exercices et anglais pour chaque classe !</p></div>
     <div class="level-grid">
       ${Object.entries(LEVELS).map(([k,v])=>`
         <div class="lcard ${k}" onclick="goLevel('${k}')">
           <div class="lcard-lbl">${v.label}</div>
-          <div class="lcard-sub">${Object.keys(v.subjects).length} matières · 4 difficultés</div>
-          ${v.vocal?'<div class="vocal-tag">🔊 Lecture vocale</div>':''}
+          <div class="lcard-sub">${Object.keys(v.subjects).length} matières · Leçons + Exercices</div>
+          ${isAutoVocalLevel(k)?'<div class="vocal-tag">🔊 Lecture vocale auto</div>':'<div class="vocal-tag" style="background:#eff6ff;color:#3b82f6;border-color:#3b82f6">🔊 Voix anglais</div>'}
         </div>`).join('')}
+    </div>`;
+}
+
+function isAutoVocalLevel(lv) { return lv === 'gs' || lv === 'cp'; }
+
+function rMode(m) {
+  const lv = LEVELS[S.level];
+  const hex = LV_COLORS[S.level];
+  m.innerHTML = bc([{l:'Accueil',f:'home()'},{l:lv.label+' — Choisis ton activité',f:null}])+
+    `<div class="mode-grid">
+      <div class="mode-card" onclick="goMode('lessons')" style="border-color:${hex}">
+        <div class="mode-icon">📚</div>
+        <div class="mode-lbl">Les leçons</div>
+        <div class="mode-desc">Lis ou écoute le cours sur une notion</div>
+      </div>
+      <div class="mode-card" onclick="goMode('exercises')" style="border-color:${hex}">
+        <div class="mode-icon">✏️</div>
+        <div class="mode-lbl">Les exercices</div>
+        <div class="mode-desc">Réponds aux questions et progresse</div>
+      </div>
     </div>`;
 }
 
 function rSubject(m) {
   const lv = LEVELS[S.level];
-  m.innerHTML = bc([{l:'Accueil',f:'home()'},{l:lv.label+' — Matière',f:null}])+
+  const modeLabel = S.mode === 'lessons' ? 'Leçons' : 'Exercices';
+  m.innerHTML = bc([
+      {l:'Accueil',f:'home()'},
+      {l:lv.label,f:`goLevel('${S.level}')`},
+      {l:modeLabel+' — Matière',f:null}
+    ])+
     `<div class="subj-grid">${Object.entries(lv.subjects).map(([k,v])=>`
       <div class="scard ${k}" onclick="goSubject('${k}')">
         <div class="scard-icon">${v.icon}</div>
@@ -1779,11 +2416,69 @@ function rSubject(m) {
       </div>`).join('')}</div>`;
 }
 
+function rLessons(m) {
+  const lv = LEVELS[S.level];
+  const sub = lv.subjects[S.subject];
+  const lessons = LESSONS[S.level]?.[S.subject] || [];
+  const hex = LV_COLORS[S.level];
+  m.innerHTML = bc([
+      {l:'Accueil',f:'home()'},
+      {l:lv.label,f:`goLevel('${S.level}')`},
+      {l:'Leçons',f:`goMode('lessons')`},
+      {l:sub.label,f:null}
+    ])+
+    `<div style="display:flex;flex-direction:column;gap:.7rem">${
+      lessons.length===0
+        ? `<div class="qcard"><div class="qtext">Aucune leçon disponible pour cette matière.</div></div>`
+        : lessons.map((lesson,i)=>`
+          <div class="lesson-card" onclick="openLesson(${i})" style="border-color:${hex}">
+            <div class="lesson-title">${lesson.t}</div>
+            <div class="lesson-cta" style="color:${hex}">Lire la leçon →</div>
+          </div>`).join('')
+    }</div>`;
+}
+
+function rLessonView(m) {
+  const lv = LEVELS[S.level];
+  const sub = lv.subjects[S.subject];
+  const lessons = LESSONS[S.level]?.[S.subject] || [];
+  const lesson = lessons[S.lessonIndex];
+  const hex = LV_COLORS[S.level];
+  if (!lesson) { home(); return; }
+  // Affichage avec retours à la ligne, et marquage anglais
+  const html = renderEnglish(lesson.content).split('\n').map(line => `<p style="margin:.5rem 0;line-height:1.6">${line||'&nbsp;'}</p>`).join('');
+  m.innerHTML = bc([
+      {l:'Accueil',f:'home()'},
+      {l:lv.label,f:`goLevel('${S.level}')`},
+      {l:'Leçons',f:`goMode('lessons')`},
+      {l:sub.label,f:`goSubject('${S.subject}')`},
+      {l:'Leçon',f:null}
+    ])+
+    `<div class="lesson-view">
+      <h2 style="font-family:'Fredoka One',cursive;color:${hex};font-size:1.4rem;margin-bottom:1rem">${lesson.t}</h2>
+      <button class="sound-btn" onclick="readLesson()" style="margin-bottom:1rem">
+        <span style="font-size:1.3rem">🔊</span><span>Écouter la leçon</span>
+      </button>
+      <div style="font-size:1rem">${html}</div>
+      <div style="display:flex;gap:8px;margin-top:1.5rem;flex-wrap:wrap">
+        ${S.lessonIndex>0?`<button class="btn" onclick="openLesson(${S.lessonIndex-1})">← Précédente</button>`:''}
+        ${S.lessonIndex<lessons.length-1?`<button class="btn primary" style="background:${hex}" onclick="openLesson(${S.lessonIndex+1})">Suivante →</button>`:''}
+        <button class="btn" onclick="goSubject('${S.subject}')">📚 Toutes les leçons</button>
+        <button class="btn" onclick="S.mode='exercises';goSubject('${S.subject}')">✏️ Faire les exercices</button>
+      </div>
+    </div>`;
+}
+
 function rSettings(m) {
   const lv = LEVELS[S.level];
   const sub = lv.subjects[S.subject];
   const hex = LV_COLORS[S.level];
-  m.innerHTML = bc([{l:'Accueil',f:'home()'},{l:lv.label,f:`goLevel('${S.level}')`},{l:sub.label+' — Paramètres',f:null}])+
+  m.innerHTML = bc([
+      {l:'Accueil',f:'home()'},
+      {l:lv.label,f:`goLevel('${S.level}')`},
+      {l:'Exercices',f:`goMode('exercises')`},
+      {l:sub.label+' — Paramètres',f:null}
+    ])+
     `<div class="settings-card"><h3>📌 Thème</h3>
       <div style="display:flex;gap:6px;flex-wrap:wrap">${Object.entries(sub.cats).map(([k,v])=>`
         <button onclick="setCat('${k}')" style="padding:7px 14px;border-radius:50px;font-size:12px;font-weight:700;border:2px solid var(--border);background:${S.cat===k?hex+'22':'var(--surface)'};border-color:${S.cat===k?hex:'var(--border)'};color:${S.cat===k?hex:'var(--text2)'};cursor:pointer">${v}</button>
@@ -1811,23 +2506,32 @@ function rQuiz(m) {
   const pct = Math.round(S.qIndex/S.questions.length*100);
   const diff = DIFFS.find(d=>d.id===S.difficulty);
   const hex = LV_COLORS[S.level];
-  const vocal = lv.vocal;
-  const cho = vocal
-    ? q.ch.map((c,i)=>`<button class="cbtn" id="ch${i}" onclick="answerV(${i})"><span class="ct">${c}</span><span class="sv">🔊</span></button>`).join('')
-    : q.ch.map((c,i)=>`<button class="cbtn" id="ch${i}" onclick="answer(${i})">${c}</button>`).join('');
+  // Voix toujours disponible (auto pour GS/CP, bouton pour CM1/CM2)
+  // Sur GS/CP : choix avec lecture vocale du choix au clic
+  // Sur CM1/CM2 : bouton 🔊 pour réécouter la question + lecture systématique pour l'anglais
+  const vocal = true; // toujours afficher bouton 🔊
+  const speakChoices = isAutoVocal() || S.subject === 'en'; // boutons réponses avec voix
 
-  m.innerHTML = bc([{l:'Accueil',f:'home()'},{l:lv.label,f:`goLevel('${S.level}')`},{l:sub.label,f:null}])+
+  const cho = speakChoices
+    ? q.ch.map((c,i)=>`<button class="cbtn" id="ch${i}" onclick="answerV(${i})"><span class="ct">${renderEnglish(c)}</span><span class="sv">🔊</span></button>`).join('')
+    : q.ch.map((c,i)=>`<button class="cbtn" id="ch${i}" onclick="answer(${i})">${renderEnglish(c)}</button>`).join('');
+
+  m.innerHTML = bc([
+      {l:'Accueil',f:'home()'},
+      {l:lv.label,f:`goLevel('${S.level}')`},
+      {l:sub.label,f:null}
+    ])+
     `<div class="qcard">
       <div class="qmeta">
         <div class="qnum">Q ${S.qIndex+1}/${S.questions.length}</div>
         <div class="qprogress"><div class="qbar" style="width:${pct}%;background:${hex}"></div></div>
         <div class="diff-badge" style="background:${diff.id==='easy'?'#dcfce7':diff.id==='medium'?'#fef3c7':diff.id==='hard'?'#fee2e2':'#f5f3ff'};color:${diff.id==='easy'?'#16a34a':diff.id==='medium'?'#92400e':diff.id==='hard'?'#dc2626':'#7c3aed'}">${diff.icon} ${diff.label}</div>
       </div>
-      ${vocal
-        ? `<button class="sound-btn" onclick="readQ()"><span style="font-size:1.3rem">🔊</span><span>${q.q}</span></button>${q.e?`<div class="qemoji">${q.e}</div>`:''}`
-        : `${q.e?`<div class="qemoji">${q.e}</div>`:''}<div class="qtext">${q.q}</div>`}
-      <div class="choices${vocal?' big':''}">${cho}</div>
+      <button class="sound-btn" onclick="readQ()"><span style="font-size:1.3rem">🔊</span><span>${renderEnglish(q.q)}</span></button>
+      ${q.e?`<div class="qemoji">${q.e}</div>`:''}
+      <div class="choices${speakChoices?' big':''}">${cho}</div>
       <div class="feedback" id="feedback"></div>
+      <div id="detailed-area"></div>
       <div class="navrow">
         <button class="btn" onclick="S.view='settings';render()">⚙️</button>
         <button class="btn primary" id="next-btn" style="display:none;background:${hex}" onclick="nextQ()">Suivant →</button>
@@ -1843,7 +2547,7 @@ function rResult(m) {
   const emoji = pct>=80?'🌟':pct>=60?'👍':pct>=40?'💪':'📚';
   const msg = pct>=80?'Excellent, bravo !':pct>=60?'Bien joué, continue !':pct>=40?'Pas mal, entraîne-toi !':'Courage, tu vas progresser !';
   const hex = LV_COLORS[S.level];
-  if (isVocal()) speak(msg);
+  if (isAutoVocal()) speak(msg);
   m.innerHTML = bc([{l:'Accueil',f:'home()'},{l:'Résultat',f:null}])+
     `<div class="rcard">
       <div class="remoji">${emoji}</div>
@@ -1853,6 +2557,7 @@ function rResult(m) {
       <div class="rbtns">
         <button class="btn primary" style="background:${hex}" onclick="startQuiz()">🔄 Nouvelles questions</button>
         <button class="btn" onclick="S.view='settings';render()">⚙️ Paramètres</button>
+        <button class="btn" onclick="S.mode='lessons';goSubject('${S.subject}')">📚 Voir leçons</button>
         <button class="btn" onclick="home()">🏠 Accueil</button>
       </div>
     </div>`;
@@ -1868,13 +2573,26 @@ function bc(items) {
 // ════════════════════════════════════════════════════════
 //  ACTIONS
 // ════════════════════════════════════════════════════════
-function home(){S.view='home';render()}
-function goLevel(lv){S.level=lv;S.scoreOk=0;S.scoreKo=0;S.view='subject';render()}
+function home(){S.view='home';S.mode=null;render()}
+function goLevel(lv){S.level=lv;S.scoreOk=0;S.scoreKo=0;S.view='mode';render()}
+function goMode(mode){S.mode=mode;S.view='subject';render()}
 function goSubject(sub){
   S.subject=sub;
   S.cat=Object.keys(LEVELS[S.level].subjects[sub].cats)[0];
-  S.view='settings';
+  if (S.mode === 'lessons') {
+    S.view = 'lessons';
+  } else {
+    S.view = 'settings';
+  }
   render();
+}
+function openLesson(i){S.lessonIndex=i;S.view='lessonView';render()}
+function readLesson() {
+  const lessons = LESSONS[S.level]?.[S.subject] || [];
+  const lesson = lessons[S.lessonIndex];
+  if (!lesson) return;
+  // Lit le titre + contenu
+  speak(lesson.t + '. ' + lesson.content);
 }
 function setCat(c){S.cat=c;render()}
 function setDiff(d){S.difficulty=d;render()}
@@ -1882,17 +2600,19 @@ function setDiff(d){S.difficulty=d;render()}
 function startQuiz(){
   S.scoreOk=0;S.scoreKo=0;
   S.questions=getQuestions(8);
-  S.qIndex=0;S.answered=false;
+  S.qIndex=0;S.answered=false;S.showDetailed=false;
   S.view='quiz';
   render();
-  if (isVocal()) setTimeout(readQ,400);
+  // Voix auto pour GS/CP, et aussi pour l'anglais à tous les niveaux
+  if (isAutoVocal() || S.subject === 'en') setTimeout(readQ,400);
 }
 
 function readQ(){
   const q = S.questions[S.qIndex];
   if (!q) return;
-  const t = q.q+'. '+q.ch.map((c,i)=>['A','B','C','D'][i]+': '+c).join('. ');
-  speak(t);
+  // Lit la question puis chaque choix avec "A: ..., B: ..." etc.
+  const text = q.q + '. ' + q.ch.map((c,i)=>['A','B','C','D'][i]+': '+c).join('. ');
+  speak(text);
 }
 
 function answerV(idx){
@@ -1903,6 +2623,7 @@ function answerV(idx){
 function answer(idx){
   if (S.answered) return;
   S.answered = true;
+  S.showDetailed = false;
   const q = S.questions[S.qIndex];
   const correct = q.a;
   document.querySelectorAll('.cbtn').forEach((btn,i)=>{
@@ -1910,34 +2631,65 @@ function answer(idx){
     if (i === correct && i !== idx) btn.classList.add('reveal');
   });
   const fb = document.getElementById('feedback');
+  const detailedArea = document.getElementById('detailed-area');
   if (idx === correct) {
     document.getElementById('ch'+idx).classList.add('correct');
     fb.className = 'feedback ok';
-    fb.innerHTML = '✓ Bravo !'+(q.ex?' — '+q.ex:'');
+    fb.innerHTML = '✓ Bravo !'+(q.ex?' — '+renderEnglish(q.ex):'');
     S.scoreOk++;
-    if (isVocal()) setTimeout(()=>speak('Bravo ! Bonne réponse !'),300);
+    if (isAutoVocal()) setTimeout(()=>speak('Bravo ! Bonne réponse !'),300);
   } else {
     document.getElementById('ch'+idx).classList.add('wrong');
     fb.className = 'feedback ko';
-    fb.innerHTML = '✗ La bonne réponse : <strong>'+q.ch[correct]+'</strong>'+(q.ex?'<br>'+q.ex:'');
+    fb.innerHTML = '✗ La bonne réponse : <strong>'+renderEnglish(q.ch[correct])+'</strong>'+(q.ex?'<br>'+renderEnglish(q.ex):'');
     S.scoreKo++;
-    if (isVocal()) setTimeout(()=>speak('La bonne réponse était : '+q.ch[correct]),300);
+    if (isAutoVocal()) setTimeout(()=>speak('La bonne réponse était : '+cleanForSpeech(q.ch[correct])),300);
+    // Afficher le bouton "En savoir plus"
+    const explain = getDetailedExplain(S.level, S.subject, S.cat);
+    if (explain && detailedArea) {
+      const hex = LV_COLORS[S.level];
+      detailedArea.innerHTML = `
+        <button class="btn-detailed" onclick="toggleDetailed()" style="border-color:${hex};color:${hex}">
+          💡 En savoir plus sur cette notion
+        </button>
+        <div id="detailed-content" style="display:none"></div>`;
+    }
   }
   document.getElementById('score-ok').textContent = S.scoreOk;
   document.getElementById('score-ko').textContent = S.scoreKo;
   document.getElementById('next-btn').style.display = '';
 }
 
+function toggleDetailed() {
+  const explain = getDetailedExplain(S.level, S.subject, S.cat);
+  if (!explain) return;
+  const content = document.getElementById('detailed-content');
+  if (!content) return;
+  S.showDetailed = !S.showDetailed;
+  if (S.showDetailed) {
+    const hex = LV_COLORS[S.level];
+    content.style.display = 'block';
+    content.innerHTML = `
+      <div class="detailed-box" style="border-color:${hex}">
+        <div style="font-size:2.5rem;text-align:center;margin-bottom:.6rem">${explain.emoji||'💡'}</div>
+        <div style="white-space:pre-wrap;line-height:1.6;font-size:.95rem">${renderEnglish(explain.text)}</div>
+      </div>`;
+  } else {
+    content.style.display = 'none';
+  }
+}
+
 function nextQ(){
   S.qIndex++;
   S.answered = false;
+  S.showDetailed = false;
   if (S.qIndex >= S.questions.length) {
     S.view = 'result';
     render();
     return;
   }
   render();
-  if (isVocal()) setTimeout(readQ, 400);
+  if (isAutoVocal() || S.subject === 'en') setTimeout(readQ, 400);
 }
 
 render();
